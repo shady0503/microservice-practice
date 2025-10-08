@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # Databases
+  postgres-user:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-order:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: orderdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-order-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-product:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: productdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-product-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Microservices
+  user-service:
+    build:
+      context: ./users
+      dockerfile: Dockerfile
+    image: chaditaqi/user-service:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-user:5432/userdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  product-service:
+    build:
+      context: ./products
+      dockerfile: Dockerfile
+    image: chaditaqi/product-service:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5432/productdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres-product:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  order-service:
+    build:
+      context: ./orders
+      dockerfile: Dockerfile
+    image: chaditaqi/order-service:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/orderdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  api-gateway:
+    build:
+      context: ./apiGateway
+      dockerfile: Dockerfile
+    image: chaditaqi/api-gateway:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      - order-service
+      - product-service
+    networks:
+      - microservices-network
+    restart: on-failure
+
+volumes:
+  postgres-user-data:
+  postgres-order-data:
+  postgres-product-data:
+
+networks:
+  microservices-network:
+    driver: bridge
