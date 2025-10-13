@@ -38,6 +38,10 @@ UrbanMoveMS est une plateforme de gestion d’un réseau de transport urbain, co
 - **Conteneurisation :** Docker
 - **Orchestration :** Docker Compose / Kubernetes (optionnel)
 
+
+<img width="2494" height="788" alt="image" src="https://github.com/user-attachments/assets/feda04ac-6f93-4397-abfd-5d7745bfbc44" />
+
+
 ---
 
 ## 📦 Architecture générale (Microservices)
