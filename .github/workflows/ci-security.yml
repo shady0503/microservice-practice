@@ -45,7 +45,7 @@ jobs:
 
       # 6) SCA (dependencies in pom.xml)
       - name: OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@v4
+        uses: dependency-check/Dependency-Check_Action@main
         with:
           project: ${{ matrix.service }}
           path: ./${{ matrix.service }}
