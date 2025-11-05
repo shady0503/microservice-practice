@@ -32,7 +32,15 @@ jobs:
 
       # 3) SAST #1: CodeQL (GitHub’s code scanner)
       - uses: github/codeql-action/init@v3
-        with: { languages: java }
+        with: 
+          languages: java 
+          # tell CodeQL where the code actually is
+          working-directory: ./${{ matrix.service }}
+
+      - name: Build before CodeQL analysis
+        working-directory: ./${{ matrix.service }}
+        run: mvn -B clean compile
+        
       - uses: github/codeql-action/analyze@v3
 
       # 4) SAST #2: Semgrep (extra rules, OWASP Top 10)
