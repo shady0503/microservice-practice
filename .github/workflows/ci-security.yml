@@ -1,0 +1,133 @@
+name: ci-security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+
+jobs:
+  build_test_scan:
+    name: Build, Test, SAST & SCA & Image Scan
+    runs-on: ubuntu-latest
+
+    
+    strategy:
+      matrix:
+        service: [apiGateway, users, products, orders]   
+
+    steps:
+      # 1) get the code
+      - uses: actions/checkout@v4
+
+      # 2) set up Java (the project uses Maven/Spring Boot)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # 3) SAST #1: CodeQL (GitHub’s code scanner)
+      - uses: github/codeql-action/init@v3
+        with: { languages: java }
+      - uses: github/codeql-action/analyze@v3
+
+      # 4) SAST #2: Semgrep (extra rules, OWASP Top 10)
+      - uses: semgrep/semgrep-action@v1
+        with:
+          config: p/owasp-top-ten p/java
+
+      # 5) secret leaks detector (catches hard-coded tokens/passwords)
+      - uses: gitleaks/gitleaks-action@v2
+
+      # 6) SCA (dependencies in my pom.xml)
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@v4
+        with:
+          project: ${{ matrix.service }}
+          path: ./${{ matrix.service }}
+          format: 'HTML'
+          out: reports/dependency-check/${{ matrix.service }}
+
+      # 7) lint your Dockerfile (common security mistakes)
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ./${{ matrix.service }}/Dockerfile
+
+      # 8) build & run tests for this service
+      - name: Build & Test (Maven)
+        working-directory: ${{ matrix.service }}
+        run: mvn -B -DskipTests=false clean package
+
+      # 9) build and push a container image to GitHub Container Registry (GHCR)
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.sha }}
+
+      # 10) SBOM (ingredient list) for that image
+      - name: SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}.cdx.json
+
+      # 11) image vulnerability scan (fail on high/critical issues)
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.sha }}
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+  dast:
+    name: DAST (run app + scan with ZAP)
+    runs-on: ubuntu-latest
+    needs: build_test_scan
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) start the whole stack (databases + services) from docker-compose.yml
+      - name: Start stack
+        run: docker compose up -d
+
+      # 2) wait until the API gateway is healthy
+      - name: Wait for gateway
+        run: |
+          for i in {1..60}; do
+            curl -fsS http://localhost:8080/actuator/health && exit 0
+            sleep 5
+          done
+          exit 1
+
+      # 3) DAST: ZAP “baseline” scan (safe, passive)
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv' 
+
+      # 4) save the HTML report as an artifact
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report.html
