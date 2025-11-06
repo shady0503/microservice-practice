@@ -56,14 +56,13 @@ jobs:
 
       # 5) secret leaks detector (catches hard-coded tokens/passwords)
       - name: Gitleaks (secret scan)
+        if: ${{ matrix.service == 'apiGateway' }}
         uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # <-- required for PRs
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # required on PRs
         with:
-          # optional, but helpful to avoid noise:
-          #   --redact hides secrets in logs
-          #   --no-git scans the working tree only (faster in CI)
-          args: --redact --no-git
+        # redact = hide secrets in logs; no-git = scan working tree only (faster in CI)
+          args: --redact --no-git --report-format sarif --report-path gitleaks.sarif
 
       # 6) SCA (dependencies in pom.xml)
       - name: OWASP Dependency-Check
