@@ -31,18 +31,23 @@ jobs:
           cache: maven
 
       # 3) SAST #1: CodeQL (GitHub’s code scanner)
-      # ---- SAST: single CodeQL scan for the whole repo ----
+      ## ---- SAST: CodeQL (per service) ----
       - name: CodeQL init (java)
         uses: github/codeql-action/init@v3
         with:
           languages: java
+          # Scan only this service folder
+          source-root: ${{ github.workspace }}/${{ matrix.service }}
 
-      # Build all modules so CodeQL sees everything
-      - name: Build all modules for CodeQL
-        run: mvn -B -DskipTests compile -am -pl apiGateway,users,products,orders
+      # Compile THIS module so CodeQL can capture the build
+      - name: Build module for CodeQL
+        run: mvn -B -f ./${{ matrix.service }}/pom.xml -DskipTests compile
 
+      # Analyze
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java/${{ matrix.service }}"
       # 4) SAST #2: Semgrep (extra rules, OWASP Top 10)
       - uses: semgrep/semgrep-action@v1
         with:
