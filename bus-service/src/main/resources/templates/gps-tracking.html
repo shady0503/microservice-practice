@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚍 Rabat-Salé-Témara Bus Tracking System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        /* Top Navigation Bar */
+        .navbar {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .navbar-brand i {
+            font-size: 2rem;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--light);
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.connected {
+            background: var(--secondary);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            height: calc(100vh - 73px);
+            background: white;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 1rem;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+        
+        .stat-card.secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+        
+        /* GPS Data Display */
+        .gps-data-card {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .gps-data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .gps-data-row:last-child {
+            border-bottom: none;
+        }
+        
+        .gps-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .gps-value {
+            font-size: 0.875rem;
+            color: var(--dark);
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Map Container */
+        .map-container {
+            position: relative;
+            height: 100%;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Activity Feed */
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .activity-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .activity-icon.success {
+            background: #d1fae5;
+            color: var(--secondary);
+        }
+        
+        .activity-icon.info {
+            background: #dbeafe;
+            color: var(--primary);
+        }
+        
+        .activity-icon.error {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-text {
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        
+        .activity-time {
+            color: #9ca3af;
+            font-size: 0.7rem;
+        }
+        
+        /* Buses by Line */
+        .buses-by-line {
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .line-group {
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem;
+        }
+        
+        .line-group:last-child {
+            border-bottom: none;
+        }
+        
+        .line-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .line-name {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+        
+        .bus-count-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .bus-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+            margin-top: 0.5rem;
+        }
+        
+        .bus-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--light);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .bus-item:hover {
+            background: var(--border);
+            transform: translateX(2px);
+        }
+        
+        .bus-matricule {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .bus-speed {
+            color: #6b7280;
+            font-size: 0.75rem;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .line-info {
+            padding: 1rem;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            z-index: 500;
+            min-width: 250px;
+        }
+        
+        .filter-section {
+            margin-bottom: 1rem;
+        }
+        
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .filter-chip {
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-chip:hover {
+            background: var(--light);
+        }
+        
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .line-filter-select {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--dark);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .line-filter-select:hover {
+            border-color: var(--primary);
+        }
+        
+        .line-filter-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        /* Custom Leaflet Popup */
+        .custom-popup {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .popup-header {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .popup-info {
+            font-size: 0.875rem;
+            margin: 0.25rem 0;
+        }
+        
+        /* Route Tooltip Styling */
+        .route-tooltip {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--light);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 400px;
+            }
+            
+            .map-controls {
+                top: 10px;
+                right: 10px;
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-bus"></i>
+            <span>Rabat-Salé-Témara Transport</span>
+        </div>
+        <div class="connection-status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="connectionText">Disconnected</span>
+        </div>
+    </nav>
+    
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Statistics -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Live Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeBuses">0</div>
+                        <div class="stat-label">Active Buses</div>
+                    </div>
+                    <div class="stat-card secondary">
+                        <div class="stat-value" id="totalUpdates">0</div>
+                        <div class="stat-label">GPS Updates</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-value" id="avgSpeed">0</div>
+                        <div class="stat-label">Avg Speed km/h</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="routeCount">0</div>
+                        <div class="stat-label">Active Routes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connection Controls -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Connection</h3>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="connectWebSocket()">
+                        <i class="fas fa-plug"></i> Connect
+                    </button>
+                    <button class="btn btn-danger" onclick="disconnectWebSocket()">
+                        <i class="fas fa-times"></i> Disconnect
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearActivity()">
+                        <i class="fas fa-trash"></i> Clear Activity
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Latest GPS Data -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Latest GPS Data</h3>
+                <div class="gps-data-card">
+                    <div class="gps-data-row">
+                        <span class="gps-label">Bus ID</span>
+                        <span class="gps-value" id="lastBusId">-</span>
+                    </div>
+                    <div class="gps-data-row">
+                        <span class="gps-label">Coordinates</span>
+                        <span class="gps-value" id="lastCoords">-, -</span>
+                    </div>
+                    <div class="gps-data-row">
+                        <span class="gps-label">Speed</span>
+                        <span class="gps-value" id="lastSpeed">- km/h</span>
+                    </div>
+                    <div class="gps-data-row">
+                        <span class="gps-label">Last Update</span>
+                        <span class="gps-value" id="lastUpdate">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Buses by Line -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Buses by Line</h3>
+                <div class="buses-by-line" id="busesByLine">
+                    <div class="line-info">No buses connected yet...</div>
+                </div>
+            </div>
+            
+            <!-- Activity Feed -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Activity Feed</h3>
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-item">
+                        <div class="activity-icon info">
+                            <i class="fas fa-info"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Waiting for connection...</div>
+                            <div class="activity-time">Just now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Map Area -->
+        <main class="map-container">
+            <div id="map"></div>
+            
+            <!-- Map Controls Overlay -->
+            <div class="map-controls">
+                <div class="filter-section">
+                    <label class="filter-label">Filter by Line</label>
+                    <select id="lineFilter" class="line-filter-select" onchange="filterByLine()">
+                        <option value="all">All Lines</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Bus Status Filter</label>
+                    <div class="filter-options">
+                        <div class="filter-chip active" data-filter="all">All</div>
+                        <div class="filter-chip" data-filter="moving">Moving</div>
+                        <div class="filter-chip" data-filter="stopped">Stopped</div>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Direction Filter</label>
+                    <div class="filter-options">
+                        <div class="filter-chip active" data-filter-dir="all" onclick="filterByDirection(this)">All</div>
+                        <div class="filter-chip" data-filter-dir="GOING" onclick="filterByDirection(this)">Going</div>
+                        <div class="filter-chip" data-filter-dir="RETURN" onclick="filterByDirection(this)">Return</div>
+                        <div class="filter-chip" data-filter-dir="CIRCULAR" onclick="filterByDirection(this)">Circular</div>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <button class="btn btn-secondary" style="width: 100%;" onclick="centerMapOnBuses()">
+                        <i class="fas fa-compress"></i> Center All Buses
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Global Variables
+        let ws = null;
+        let map = null;
+        let routeLayerGroup = null; // Separate layer for routes (below buses)
+        let busLayerGroup = null;   // Separate layer for buses (above routes)
+        let busMarkers = {};
+        let routePolylines = {}; // Store polylines by routeId
+        let busPositionIndex = {}; // Track position index for each bus on its route
+        let trackedBuses = new Set();
+        let trackedRoutes = new Set();
+        let updateCount = 0;
+        let speedValues = [];
+        let busesByLine = {}; // Track buses organized by line
+        let currentLineFilter = 'all'; // Track current line filter
+        let currentDirectionFilter = 'all'; // Track current direction filter
+        let routeDirections = {}; // Store route directions by routeId
+        
+        // Generate distinct colors for different buses
+        const busColors = [
+            '#2563eb', '#dc2626', '#16a34a', '#ca8a04', 
+            '#9333ea', '#ea580c', '#0891b2', '#be185d',
+            '#65a30d', '#4f46e5', '#db2777', '#059669'
+        ];
+        
+        function getBusColor(busId) {
+            // Generate consistent color based on busId
+            const hash = busId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return busColors[hash % busColors.length];
+        }
+        
+        // Bus icon generator with color
+        function createBusIcon(busId) {
+            const color = getBusColor(busId);
+            return L.divIcon({
+                className: 'custom-bus-marker',
+                html: `<div style="background: ${color}; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.5); position: relative; z-index: 1000;"><i class="fas fa-bus" style="font-size: 18px;"></i></div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+            });
+        }
+        
+        // Initialize Map
+        function initMap() {
+            // Center on Rabat, Morocco
+            map = L.map('map').setView([33.9716, -6.8498], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Create separate layer groups for routes and buses
+            // Routes layer (drawn first, below buses)
+            routeLayerGroup = L.layerGroup().addTo(map);
+            routeLayerGroup.setZIndex(100); // Lower z-index for routes
+            
+            // Buses layer (drawn second, above routes)
+            busLayerGroup = L.layerGroup().addTo(map);
+            busLayerGroup.setZIndex(1000); // Higher z-index for buses
+            
+            // Add custom attribution
+            map.attributionControl.setPrefix('Rabat-Salé-Témara Transport System');
+        }
+        
+        // WebSocket Functions
+        function connectWebSocket() {
+            const wsUrl = 'ws://localhost:8080/ws/gps-tracking';
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    addActivity('Connected to GPS tracking server', 'success');
+                    updateConnectionStatus(true);
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        handleWebSocketMessage(message);
+                    } catch (e) {
+                        addActivity('Error parsing message: ' + e.message, 'error');
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    addActivity('WebSocket connection error', 'error');
+                    updateConnectionStatus(false);
+                };
+                
+                ws.onclose = () => {
+                    addActivity('Disconnected from server', 'info');
+                    updateConnectionStatus(false);
+                };
+                
+            } catch (e) {
+                addActivity('Failed to connect: ' + e.message, 'error');
+            }
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function handleWebSocketMessage(message) {
+            const { type, payload } = message;
+            
+            switch (type) {
+                case 'CONNECTION':
+                    addActivity(payload, 'success');
+                    break;
+                    
+                case 'GPS_UPDATE':
+                    handleGpsUpdate(payload);
+                    break;
+                    
+                case 'ERROR':
+                    addActivity('Server error: ' + payload, 'error');
+                    break;
+                    
+                default:
+                    addActivity('Unknown message type: ' + type, 'info');
+            }
+        }
+        
+        function handleGpsUpdate(gpsData) {
+            // Update statistics
+            updateCount++;
+            document.getElementById('totalUpdates').textContent = updateCount;
+            
+            const busId = gpsData.busId;
+            const lineNumber = gpsData.lineNumber || extractLineFromMatricule(gpsData.busMatricule);
+            const matricule = gpsData.busMatricule || busId.substring(0, 8);
+            const routeName = gpsData.routeName || 'Unknown Route';
+            const routeId = gpsData.routeId;
+            const direction = gpsData.direction || 'GOING'; // Default to GOING if not specified
+            
+            trackedBuses.add(busId);
+            document.getElementById('activeBuses').textContent = trackedBuses.size;
+            
+            if (gpsData.speed !== null && gpsData.speed !== undefined) {
+                speedValues.push(gpsData.speed);
+                if (speedValues.length > 100) speedValues.shift();
+                const avgSpeed = (speedValues.reduce((a, b) => a + b, 0) / speedValues.length).toFixed(1);
+                document.getElementById('avgSpeed').textContent = avgSpeed;
+            }
+            
+            // Store route direction
+            if (routeId) {
+                routeDirections[routeId] = direction;
+            }
+            
+            // Update buses by line tracking
+            if (!busesByLine[lineNumber]) {
+                busesByLine[lineNumber] = {
+                    routeName: routeName,
+                    buses: {}
+                };
+            }
+            busesByLine[lineNumber].buses[busId] = {
+                matricule: matricule,
+                speed: gpsData.speed,
+                latitude: gpsData.latitude,
+                longitude: gpsData.longitude,
+                lastUpdate: new Date(),
+                routeId: routeId,
+                direction: direction
+            };
+            
+            // Update route count
+            document.getElementById('routeCount').textContent = Object.keys(busesByLine).length;
+            
+            // Update latest GPS data display
+            document.getElementById('lastBusId').textContent = matricule;
+            document.getElementById('lastCoords').textContent = 
+                `${gpsData.latitude?.toFixed(5)}, ${gpsData.longitude?.toFixed(5)}`;
+            document.getElementById('lastSpeed').textContent = 
+                gpsData.speed ? gpsData.speed.toFixed(1) + ' km/h' : '0 km/h';
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            
+            // Update bus marker position (routes are loaded independently on page load)
+            updateBusMarker(busId, gpsData);
+            
+            // Update buses by line display
+            updateBusesByLineDisplay();
+            
+            // Update line filter dropdown
+            updateLineFilterDropdown();
+            
+            // Add to activity feed
+            addActivity(`${lineNumber} - ${matricule} updated position`, 'success');
+        }
+        
+        function extractLineFromMatricule(matricule) {
+            if (!matricule) return 'Unknown';
+            // Extract line number from matricule like "RBT-L01-001" -> "L01"
+            const match = matricule.match(/L\d+[A-Z]?/);
+            return match ? match[0] : 'Unknown';
+        }
+        
+        function updateBusesByLineDisplay() {
+            const container = document.getElementById('busesByLine');
+            
+            if (Object.keys(busesByLine).length === 0) {
+                container.innerHTML = '<div class="line-info">No buses connected yet...</div>';
+                return;
+            }
+            
+            // Sort lines alphabetically
+            const sortedLines = Object.keys(busesByLine).sort();
+            
+            let html = '';
+            for (const lineNumber of sortedLines) {
+                const lineData = busesByLine[lineNumber];
+                const busCount = Object.keys(lineData.buses).length;
+                
+                html += `
+                    <div class="line-group">
+                        <div class="line-header" onclick="toggleLineExpand('${lineNumber}')">
+                            <span class="line-name">🚌 ${lineNumber}</span>
+                            <span class="bus-count-badge">${busCount} bus${busCount !== 1 ? 'es' : ''}</span>
+                        </div>
+                        <div class="bus-list" id="line-${lineNumber}">
+                `;
+                
+                // Sort buses by matricule
+                const sortedBuses = Object.entries(lineData.buses).sort((a, b) => 
+                    a[1].matricule.localeCompare(b[1].matricule)
+                );
+                
+                for (const [busId, busInfo] of sortedBuses) {
+                    const speed = busInfo.speed ? busInfo.speed.toFixed(1) : '0.0';
+                    html += `
+                        <div class="bus-item" onclick="focusBus('${busId}')">
+                            <span class="bus-matricule">${busInfo.matricule}</span>
+                            <span class="bus-speed">${speed} km/h</span>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function focusBus(busId) {
+            if (busMarkers[busId]) {
+                const marker = busMarkers[busId];
+                map.setView(marker.getLatLng(), 16);
+                marker.openPopup();
+            }
+        }
+        
+        function toggleLineExpand(lineNumber) {
+            const element = document.getElementById(`line-${lineNumber}`);
+            if (element) {
+                element.style.display = element.style.display === 'none' ? 'flex' : 'none';
+            }
+        }
+        
+        // Debounce updates for performance
+        let updateQueue = new Map();
+        let rafScheduled = false;
+        
+        function scheduleUpdate() {
+            if (!rafScheduled) {
+                rafScheduled = true;
+                requestAnimationFrame(() => {
+                    updateQueue.forEach((data, busId) => {
+                        performBusUpdate(busId, data);
+                    });
+                    updateQueue.clear();
+                    rafScheduled = false;
+                });
+            }
+        }
+        
+        function updateBusMarker(busId, gpsData) {
+            updateQueue.set(busId, gpsData);
+            scheduleUpdate();
+        }
+        
+        function performBusUpdate(busId, gpsData) {
+            const { latitude, longitude, routeId } = gpsData;
+            
+            if (!latitude || !longitude) return;
+            
+            const position = [latitude, longitude];
+            const lineNumber = gpsData.lineNumber || extractLineFromMatricule(gpsData.busMatricule);
+            const direction = gpsData.direction || routeDirections[routeId] || 'GOING';
+            
+            // Check if marker should be visible based on filters
+            const lineMatches = currentLineFilter === 'all' || lineNumber === currentLineFilter;
+            const directionMatches = currentDirectionFilter === 'all' || direction === currentDirectionFilter;
+            const shouldShow = lineMatches && directionMatches;
+            
+            if (busMarkers[busId]) {
+                // Update existing marker position ONLY
+                busMarkers[busId].setLatLng(position);
+                busMarkers[busId].getPopup().setContent(createPopupContent(busId, gpsData));
+                
+                // Update icon color in case it wasn't set
+                busMarkers[busId].setIcon(createBusIcon(busId));
+                
+                // Show or hide marker based on filter
+                if (shouldShow) {
+                    if (!busLayerGroup.hasLayer(busMarkers[busId])) {
+                        busLayerGroup.addLayer(busMarkers[busId]);
+                    }
+                } else {
+                    if (busLayerGroup.hasLayer(busMarkers[busId])) {
+                        busLayerGroup.removeLayer(busMarkers[busId]);
+                    }
+                }
+            } else {
+                // Create new marker with unique color and high zIndexOffset
+                const marker = L.marker(position, { 
+                    icon: createBusIcon(busId),
+                    zIndexOffset: 1000 + Object.keys(busMarkers).length // Each bus gets unique z-index
+                })
+                    .bindPopup(createPopupContent(busId, gpsData));
+                
+                if (shouldShow) {
+                    busLayerGroup.addLayer(marker);
+                }
+                
+                busMarkers[busId] = marker;
+            }
+        }
+        
+        /**
+         * Render route polyline ONCE when first discovered.
+         * Routes are STATIC and never re-rendered after initial creation.
+         * This is completely independent from bus marker updates.
+         */
+        function renderRouteOnce(routeId, routeGeometry, lineNumber) {
+            // If route already exists, do NOTHING - routes are static
+            if (routePolylines[routeId]) {
+                return;
+            }
+            
+            // Generate unique color for each route to distinguish overlapping routes
+            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+            const colorIndex = Object.keys(routePolylines).length % colors.length;
+            
+            // Create route polyline ONCE with performance optimizations
+            const polyline = L.polyline(routeGeometry, {
+                color: colors[colorIndex],
+                weight: 3,
+                opacity: 0.7,
+                smoothFactor: 3,            // Simplify geometry
+                pane: 'overlayPane',
+                interactive: false          // No click/hover on routes
+            }).bindTooltip(`Line ${lineNumber}`, {
+                permanent: false,
+                direction: 'top',
+                className: 'route-tooltip'
+            });
+            
+            // Check if should be visible based on current filter
+            const shouldShow = currentLineFilter === 'all' || lineNumber === currentLineFilter;
+            
+            if (shouldShow) {
+                routeLayerGroup.addLayer(polyline);
+            }
+            
+            // Store route data
+            routePolylines[routeId] = {
+                polyline: polyline,
+                lineNumber: lineNumber
+            };
+            
+            addActivity(`Route ${lineNumber} loaded`, 'info');
+        }
+        
+        function createPopupContent(busId, gpsData) {
+            const matricule = gpsData.busMatricule || busId.substring(0, 8);
+            const lineNumber = gpsData.lineNumber || extractLineFromMatricule(matricule);
+            const routeName = gpsData.routeName || 'Unknown Route';
+            const direction = gpsData.direction || routeDirections[gpsData.routeId] || 'GOING';
+            const directionIcon = direction === 'GOING' ? '→' : direction === 'RETURN' ? '←' : '↺';
+            const directionLabel = direction === 'GOING' ? 'Going' : direction === 'RETURN' ? 'Return' : 'Circular';
+            
+            return `
+                <div class="custom-popup">
+                    <div class="popup-header">🚌 ${matricule}</div>
+                    <div class="popup-info"><strong>Line:</strong> ${lineNumber}</div>
+                    <div class="popup-info"><strong>Route:</strong> ${routeName}</div>
+                    <div class="popup-info"><strong>Direction:</strong> ${directionIcon} ${directionLabel}</div>
+                    <div class="popup-info"><strong>Coordinates:</strong> ${gpsData.latitude?.toFixed(5)}, ${gpsData.longitude?.toFixed(5)}</div>
+                    <div class="popup-info"><strong>Speed:</strong> ${gpsData.speed?.toFixed(1) || 0} km/h</div>
+                    <div class="popup-info"><strong>Time:</strong> ${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+        }
+        
+        function centerMapOnBuses() {
+            const visibleMarkers = [];
+            Object.values(busMarkers).forEach(marker => {
+                if (busLayerGroup.hasLayer(marker)) {
+                    visibleMarkers.push(marker);
+                }
+            });
+            
+            if (visibleMarkers.length > 0) {
+                const group = L.featureGroup(visibleMarkers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        function updateLineFilterDropdown() {
+            const select = document.getElementById('lineFilter');
+            const currentValue = select.value;
+            
+            // Get sorted list of line numbers
+            const lines = Object.keys(busesByLine).sort();
+            
+            // Build options HTML
+            let optionsHtml = '<option value="all">All Lines</option>';
+            lines.forEach(line => {
+                const busCount = Object.keys(busesByLine[line].buses).length;
+                const selected = line === currentValue ? 'selected' : '';
+                optionsHtml += `<option value="${line}" ${selected}>${line} (${busCount} bus${busCount !== 1 ? 'es' : ''})</option>`;
+            });
+            
+            select.innerHTML = optionsHtml;
+        }
+        
+        function filterByLine() {
+            const select = document.getElementById('lineFilter');
+            currentLineFilter = select.value;
+            applyAllFilters();
+            
+            const filterText = currentLineFilter === 'all' ? 'all lines' : currentLineFilter;
+            addActivity(`Filter applied: showing ${filterText}`, 'info');
+        }
+        
+        function filterByDirection(chip) {
+            // Update active chip
+            document.querySelectorAll('[data-filter-dir]').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            
+            currentDirectionFilter = chip.getAttribute('data-filter-dir');
+            applyAllFilters();
+            
+            const filterText = currentDirectionFilter === 'all' ? 'all directions' : currentDirectionFilter.toLowerCase();
+            addActivity(`Direction filter: ${filterText}`, 'info');
+        }
+        
+        function applyAllFilters() {
+            // Show/hide markers based on all active filters
+            Object.entries(busMarkers).forEach(([busId, marker]) => {
+                // Find the line number and direction for this bus
+                let busLineNumber = null;
+                let busDirection = 'GOING';
+                for (const [lineNumber, lineData] of Object.entries(busesByLine)) {
+                    if (lineData.buses[busId]) {
+                        busLineNumber = lineNumber;
+                        busDirection = lineData.buses[busId].direction || 'GOING';
+                        break;
+                    }
+                }
+                
+                const lineMatches = currentLineFilter === 'all' || busLineNumber === currentLineFilter;
+                const directionMatches = currentDirectionFilter === 'all' || busDirection === currentDirectionFilter;
+                
+                if (lineMatches && directionMatches) {
+                    if (!busLayerGroup.hasLayer(marker)) {
+                        busLayerGroup.addLayer(marker);
+                    }
+                } else {
+                    if (busLayerGroup.hasLayer(marker)) {
+                        busLayerGroup.removeLayer(marker);
+                    }
+                }
+            });
+            
+            // Show/hide polylines based on filters
+            Object.entries(routePolylines).forEach(([routeId, routeData]) => {
+                const lineMatches = currentLineFilter === 'all' || routeData.lineNumber === currentLineFilter;
+                const directionMatches = currentDirectionFilter === 'all' || routeDirections[routeId] === currentDirectionFilter;
+                
+                if (lineMatches && directionMatches) {
+                    if (!routeLayerGroup.hasLayer(routeData.polyline)) {
+                        routeLayerGroup.addLayer(routeData.polyline);
+                    }
+                } else {
+                    if (routeLayerGroup.hasLayer(routeData.polyline)) {
+                        routeLayerGroup.removeLayer(routeData.polyline);
+                    }
+                }
+            });
+            
+            // Center map on visible buses
+            centerMapOnBuses();
+        }
+        
+        // UI Update Functions
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                indicator.classList.add('connected');
+                text.textContent = 'Connected';
+            } else {
+                indicator.classList.remove('connected');
+                text.textContent = 'Disconnected';
+            }
+        }
+        
+        function addActivity(message, type = 'info') {
+            const feed = document.getElementById('activityFeed');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            
+            const iconClass = type === 'success' ? 'fa-check-circle' : 
+                            type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            
+            item.innerHTML = `
+                <div class="activity-icon ${type}">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${message}</div>
+                    <div class="activity-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only last 50 items
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+        
+        function clearActivity() {
+            const feed = document.getElementById('activityFeed');
+            feed.innerHTML = `
+                <div class="activity-item">
+                    <div class="activity-icon info">
+                        <i class="fas fa-info"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Activity feed cleared</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Filter functionality
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                const filter = this.dataset.filter;
+                filterBuses(filter);
+            });
+        });
+        
+        function filterBuses(filter) {
+            // Implement filtering logic based on bus status
+            // This would require additional bus state tracking
+            addActivity(`Filter applied: ${filter}`, 'info');
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initMap();
+            loadAllRoutes(); // Load routes independently
+            addActivity('GPS tracking system ready', 'info');
+            updateConnectionStatus(false);
+        });
+        
+        // Load all routes from API (independent of buses)
+        async function loadAllRoutes() {
+            try {
+                addActivity('Loading routes from server...', 'info');
+                const response = await fetch('/routes');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const routes = await response.json();
+                
+                // Render each route once and store direction
+                routes.forEach(route => {
+                    // Store route direction
+                    if (route.routeId && route.direction) {
+                        routeDirections[route.routeId] = route.direction;
+                    }
+                    
+                    if (route.geometry) {
+                        try {
+                            const geometry = JSON.parse(route.geometry);
+                            renderRouteOnce(route.routeId, geometry, route.lineNumber);
+                        } catch (e) {
+                            console.error(`Failed to parse geometry for route ${route.lineNumber}:`, e);
+                        }
+                    }
+                });
+                
+                addActivity(`✓ Loaded ${routes.length} routes`, 'success');
+            } catch (error) {
+                console.error('Error loading routes:', error);
+                addActivity('Failed to load routes: ' + error.message, 'error');
+            }
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>

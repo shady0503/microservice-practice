@@ -1,0 +1,30 @@
+# Git and IDE files
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+
+# Maven
+target/
+.mvn/
+
+# Build artifacts
+*.jar
+*.war
+*.class
+
+# Logs
+*.log
+
+# Cache files
+routes-cache.json
+
+# Documentation
+README.md
+HELP.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
