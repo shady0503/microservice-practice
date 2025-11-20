@@ -41,12 +41,19 @@ public interface BusRepository extends JpaRepository<Bus, UUID> {
     /**
      * Find all buses with a given status and optionally assigned to a route.
      */
-    @Query("SELECT b FROM Bus b WHERE b.status = :status AND (:routeId IS NULL OR b.currentRoute.routeId = :routeId)")
+    @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.currentRoute WHERE b.status = :status AND (:routeId IS NULL OR b.currentRoute.routeId = :routeId)")
     List<Bus> findByStatusAndRoute(@Param("status") BusStatus status, @Param("routeId") UUID routeId);
-    
+
     /**
      * Find all buses that are currently in service (EN_SERVICE status).
+     * Uses JOIN FETCH to avoid N+1 query problem when accessing route information.
      */
-    @Query("SELECT b FROM Bus b WHERE b.status = 'EN_SERVICE'")
+    @Query("SELECT DISTINCT b FROM Bus b LEFT JOIN FETCH b.currentRoute WHERE b.status = 'EN_SERVICE'")
     List<Bus> findAllActiveBuses();
+
+    /**
+     * Find all buses with routes eagerly loaded to avoid N+1 queries.
+     */
+    @Query("SELECT DISTINCT b FROM Bus b LEFT JOIN FETCH b.currentRoute")
+    List<Bus> findAllWithRoutes();
 }

@@ -689,18 +689,30 @@
         let currentLineFilter = 'all'; // Track current line filter
         let currentDirectionFilter = 'all'; // Track current direction filter
         let routeDirections = {}; // Store route directions by routeId
-        
+
         // Generate distinct colors for different buses
         const busColors = [
-            '#2563eb', '#dc2626', '#16a34a', '#ca8a04', 
+            '#2563eb', '#dc2626', '#16a34a', '#ca8a04',
             '#9333ea', '#ea580c', '#0891b2', '#be185d',
             '#65a30d', '#4f46e5', '#db2777', '#059669'
         ];
-        
+
+        // Cache for bus colors to avoid repeated hash calculations
+        const busColorCache = new Map();
+
         function getBusColor(busId) {
+            // Return cached color if exists
+            if (busColorCache.has(busId)) {
+                return busColorCache.get(busId);
+            }
+
             // Generate consistent color based on busId
             const hash = busId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-            return busColors[hash % busColors.length];
+            const color = busColors[hash % busColors.length];
+
+            // Cache the color
+            busColorCache.set(busId, color);
+            return color;
         }
         
         // Bus icon generator with color
@@ -941,21 +953,31 @@
             }
         }
         
-        // Debounce updates for performance
+        // Debounce updates for performance with batch size limiting
         let updateQueue = new Map();
         let rafScheduled = false;
-        
+        const MAX_BATCH_SIZE = 50;
+        const BATCH_TIMEOUT = 100; // ms
+
         function scheduleUpdate() {
             if (!rafScheduled) {
                 rafScheduled = true;
-                requestAnimationFrame(() => {
-                    updateQueue.forEach((data, busId) => {
-                        performBusUpdate(busId, data);
-                    });
-                    updateQueue.clear();
-                    rafScheduled = false;
-                });
+
+                // Force update if batch size exceeds limit
+                if (updateQueue.size >= MAX_BATCH_SIZE) {
+                    flushUpdates();
+                } else {
+                    requestAnimationFrame(flushUpdates);
+                }
             }
+        }
+
+        function flushUpdates() {
+            updateQueue.forEach((data, busId) => {
+                performBusUpdate(busId, data);
+            });
+            updateQueue.clear();
+            rafScheduled = false;
         }
         
         function updateBusMarker(busId, gpsData) {

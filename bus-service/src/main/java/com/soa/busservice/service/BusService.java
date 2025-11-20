@@ -42,6 +42,7 @@ public class BusService {
     // Kafka Topics
     private static final String TOPIC_BUS_STATUS_EVENTS = "bus.status.events";
     private static final String TOPIC_BUS_LOCATION_UPDATES = "bus.location.updates";
+    private static final String TOPIC_BUS_LIFECYCLE_EVENTS = "bus.lifecycle.events";
     
     /**
      * Create a new bus.
@@ -72,7 +73,10 @@ public class BusService {
         Bus savedBus = busRepository.save(busBuilder.build());
         String routeInfo = savedBus.getCurrentRoute() != null ? savedBus.getCurrentRoute().getLineNumber() : "none";
         log.info("Bus created successfully with ID: {} on route: {}", savedBus.getBusId(), routeInfo);
-        
+
+        // Publish bus created event for synchronization
+        publishBusLifecycleEvent("CREATED", savedBus);
+
         return mapToDto(savedBus);
     }
     
@@ -189,12 +193,15 @@ public class BusService {
         
         Bus updatedBus = busRepository.save(bus);
         log.info("Bus updated successfully with ID: {}", busId);
-        
+
         // Publish status change event if status changed
         if (!oldStatus.equals(createBusDto.getStatus())) {
             publishBusStatusEvent(busId.toString(), oldStatus.toString(), createBusDto.getStatus().toString());
         }
-        
+
+        // Publish bus updated event for synchronization
+        publishBusLifecycleEvent("UPDATED", updatedBus);
+
         return mapToDto(updatedBus);
     }
     
@@ -229,12 +236,16 @@ public class BusService {
      */
     public void deleteBus(UUID busId) {
         log.info("Deleting bus with ID: {}", busId);
-        
-        if (!busRepository.existsById(busId)) {
-            log.warn("Bus not found with ID: {}", busId);
-            throw new NoSuchElementException("Bus not found with ID: " + busId);
-        }
-        
+
+        Bus bus = busRepository.findById(busId)
+                .orElseThrow(() -> {
+                    log.warn("Bus not found with ID: {}", busId);
+                    return new NoSuchElementException("Bus not found with ID: " + busId);
+                });
+
+        // Publish bus deleted event before deletion
+        publishBusLifecycleEvent("DELETED", bus);
+
         busRepository.deleteById(busId);
         log.info("Bus deleted successfully with ID: {}", busId);
     }
@@ -359,9 +370,32 @@ public class BusService {
                 .longitude(longitude)
                 .timestamp(timestamp)
                 .build();
-        
+
         kafkaTemplate.send(TOPIC_BUS_LOCATION_UPDATES, busId, event);
         log.debug("Published location update event for bus {}", busId);
+    }
+
+    /**
+     * Publish bus lifecycle event (create/update/delete) to Kafka for service synchronization.
+     */
+    private void publishBusLifecycleEvent(String eventType, Bus bus) {
+        try {
+            String routeId = bus.getCurrentRoute() != null ? bus.getCurrentRoute().getRouteId().toString() : null;
+            var event = java.util.Map.of(
+                    "eventType", eventType,
+                    "busId", bus.getBusId().toString(),
+                    "registrationNumber", bus.getMatricule(),
+                    "capacity", bus.getCapacity(),
+                    "status", bus.getStatus().toString(),
+                    "routeId", routeId != null ? routeId : "",
+                    "timestamp", LocalDateTime.now().toString()
+            );
+
+            kafkaTemplate.send(TOPIC_BUS_LIFECYCLE_EVENTS, bus.getBusId().toString(), event);
+            log.info("Published {} event for bus {}", eventType, bus.getBusId());
+        } catch (Exception e) {
+            log.error("Failed to publish lifecycle event for bus {}: {}", bus.getBusId(), e.getMessage());
+        }
     }
     
     /**
