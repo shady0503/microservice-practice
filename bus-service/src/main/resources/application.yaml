@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: bus-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bus_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+    show-sql: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: bus-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 100
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      ack-mode: BATCH
+
+# OpenStreetMap Configuration - Now fetches REAL transit data!
+openstreetmap:
+  enabled: true
+  refresh-interval: 10000 # GPS update interval in milliseconds (10 seconds - reduced for performance)
+  
+  # Overpass API configuration (for fetching transit routes)
+  overpass-api-url: https://overpass-api.de/api/interpreter
+  overpass-timeout: 60 # seconds
+  
+  # OSRM routing service (for route geometry generation)
+  osrm-api-url: http://router.project-osrm.org/route/v1/driving
+  
+  # Region bounding box for Rabat-Salé-Témara (south, west, north, east)
+  region-bbox: "33.85,-7.10,34.15,-6.70"
+  
+  # Transit data fetching
+  fetch-on-startup: true
+  cache-routes: true
+
+logging:
+  level:
+    com.soa.busservice: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.web.reactive: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      simple:
+        enabled: true
+    tags:
+      application: bus-service
