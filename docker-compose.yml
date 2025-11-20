@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Message Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL for Bus Service
+  postgres-bus:
+    image: postgres:15-alpine
+    container_name: postgres-bus
+    environment:
+      POSTGRES_DB: bus_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-bus-data:/var/lib/postgresql/data
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for Trajet Service
+  postgres-trajet:
+    image: postgres:15-alpine
+    container_name: postgres-trajet
+    environment:
+      POSTGRES_DB: trajet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-trajet-data:/var/lib/postgresql/data
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Bus Service (Geolocation Service)
+  bus-service:
+    build:
+      context: ./bus-service
+      dockerfile: Dockerfile
+    container_name: bus-service
+    depends_on:
+      postgres-bus:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-bus:5432/bus_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - urbanmove-network
+    restart: unless-stopped
+
+  # Trajet Service (Routes & Schedules Service)
+  trajet-service:
+    build:
+      context: ./trajet-service
+      dockerfile: Dockerfile
+    container_name: trajet-service
+    depends_on:
+      postgres-trajet:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres-trajet
+      DB_PORT: 5432
+      DB_NAME: trajet_db
+      DB_USER: postgres
+      DB_PASS: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVER_PORT: 8081
+    networks:
+      - urbanmove-network
+    restart: unless-stopped
+
+networks:
+  urbanmove-network:
+    driver: bridge
+
+volumes:
+  postgres-bus-data:
+  postgres-trajet-data:

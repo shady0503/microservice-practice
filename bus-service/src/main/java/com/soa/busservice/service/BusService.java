@@ -1,385 +1,208 @@
 package com.soa.busservice.service;
 
-import com.soa.busservice.dto.CreateBusDto;
-import com.soa.busservice.dto.BusDto;
-import com.soa.busservice.dto.BusLocationDto;
-import com.soa.busservice.dto.kafka.BusLocationUpdateEvent;
-import com.soa.busservice.dto.kafka.BusStatusEvent;
+import com.soa.busservice.dto.BusRequest;
+import com.soa.busservice.dto.BusResponse;
+import com.soa.busservice.dto.LocationUpdateRequest;
+import com.soa.busservice.event.BusLocationEvent;
+import com.soa.busservice.event.BusStatusEvent;
+import com.soa.busservice.kafka.KafkaProducerService;
 import com.soa.busservice.model.Bus;
-import com.soa.busservice.model.BusLocationHistory;
-import com.soa.busservice.model.BusStatus;
-import com.soa.busservice.model.Route;
+import com.soa.busservice.model.Status;
 import com.soa.busservice.repository.BusRepository;
-import com.soa.busservice.repository.BusLocationHistoryRepository;
-import com.soa.busservice.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Business logic service for Bus operations.
- * Handles CRUD operations, domain logic, and publishes Kafka events.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class BusService {
-    
+
     private final BusRepository busRepository;
-    private final BusLocationHistoryRepository busLocationHistoryRepository;
-    private final RouteRepository routeRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    
-    // Kafka Topics
-    private static final String TOPIC_BUS_STATUS_EVENTS = "bus.status.events";
-    private static final String TOPIC_BUS_LOCATION_UPDATES = "bus.location.updates";
-    
-    /**
-     * Create a new bus.
-     * @param createBusDto Data transfer object for bus creation
-     * @return Created bus as DTO
-     */
-    public BusDto createBus(CreateBusDto createBusDto) {
-        log.info("Creating new bus with matricule: {}", createBusDto.getMatricule());
+    private final KafkaProducerService kafkaProducerService;
+
+    @Transactional
+    public BusResponse createBus(BusRequest request) {
+        log.info("Creating new bus with number: {}", request.getBusNumber());
         
-        // Check for duplicate matricule
-        if (busRepository.findByMatricule(createBusDto.getMatricule()).isPresent()) {
-            log.warn("Bus with matricule {} already exists", createBusDto.getMatricule());
-            throw new IllegalArgumentException("A bus with this matricule already exists");
+        if (busRepository.existsByBusNumber(request.getBusNumber())) {
+            throw new IllegalArgumentException("Bus with number " + request.getBusNumber() + " already exists");
         }
-        
-        Bus.BusBuilder busBuilder = Bus.builder()
-                .matricule(createBusDto.getMatricule())
-                .capacity(createBusDto.getCapacity())
-                .status(createBusDto.getStatus());
-        
-        // Set route if provided
-        if (createBusDto.getCurrentRouteId() != null) {
-            Route route = routeRepository.findById(UUID.fromString(createBusDto.getCurrentRouteId()))
-                    .orElse(null);
-            busBuilder.currentRoute(route);
+
+        Bus bus = new Bus();
+        bus.setBusNumber(request.getBusNumber());
+        bus.setLineCode(request.getLineCode());
+        bus.setCapacity(request.getCapacity());
+        bus.setStatus(request.getStatus() != null ? request.getStatus() : Status.INACTIVE);
+        bus.setLatitude(request.getLatitude());
+        bus.setLongitude(request.getLongitude());
+        bus.setSpeed(request.getSpeed());
+        bus.setHeading(request.getHeading());
+
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            bus.setLastLocationUpdate(LocalDateTime.now());
         }
+
+        Bus savedBus = busRepository.save(bus);
+        log.info("Bus created successfully with ID: {}", savedBus.getId());
         
-        Bus savedBus = busRepository.save(busBuilder.build());
-        String routeInfo = savedBus.getCurrentRoute() != null ? savedBus.getCurrentRoute().getLineNumber() : "none";
-        log.info("Bus created successfully with ID: {} on route: {}", savedBus.getBusId(), routeInfo);
-        
-        return mapToDto(savedBus);
+        return mapToResponse(savedBus);
     }
-    
-    /**
-     * Retrieve all buses.
-     * @return List of all buses as DTOs
-     */
+
     @Transactional(readOnly = true)
-    public List<BusDto> getAllBuses() {
-        log.debug("Fetching all buses");
+    public List<BusResponse> getAllBuses() {
+        log.info("Fetching all buses");
         return busRepository.findAll().stream()
-                .map(this::mapToDto)
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Retrieve all bus entities (for internal service use).
-     * @return List of all bus entities
-     */
+
     @Transactional(readOnly = true)
-    public List<Bus> getAllBusEntities() {
-        return busRepository.findAll();
+    public BusResponse getBusById(UUID id) {
+        log.info("Fetching bus with ID: {}", id);
+        Bus bus = busRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + id));
+        return mapToResponse(bus);
     }
-    
-    /**
-     * Retrieve all active buses (EN_SERVICE status).
-     * @return List of active buses as DTOs
-     */
+
     @Transactional(readOnly = true)
-    public List<BusDto> getAllActiveBuses() {
-        log.debug("Fetching all active buses");
-        return busRepository.findAllActiveBuses().stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public BusResponse getBusByNumber(String busNumber) {
+        log.info("Fetching bus with number: {}", busNumber);
+        Bus bus = busRepository.findByBusNumber(busNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with number: " + busNumber));
+        return mapToResponse(bus);
     }
-    
-    /**
-     * Retrieve buses by status filter.
-     * @param status Bus operational status
-     * @return List of buses with the specified status
-     */
+
     @Transactional(readOnly = true)
-    public List<BusDto> getBusesByStatus(BusStatus status) {
-        log.debug("Fetching buses with status: {}", status);
+    public List<BusResponse> getBusesByStatus(Status status) {
+        log.info("Fetching buses with status: {}", status);
         return busRepository.findByStatus(status).stream()
-                .map(this::mapToDto)
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Retrieve buses assigned to a specific route.
-     * @param routeId Route identifier
-     * @return List of buses assigned to the route
-     */
+
     @Transactional(readOnly = true)
-    public List<BusDto> getBusesByRoute(String routeId) {
-        log.debug("Fetching buses for route: {}", routeId);
-        UUID routeUuid = UUID.fromString(routeId);
-        return busRepository.findByCurrentRouteRouteId(routeUuid).stream()
-                .map(this::mapToDto)
+    public List<BusResponse> getBusesByLineCode(String lineCode) {
+        log.info("Fetching buses for line: {}", lineCode);
+        return busRepository.findByLineCode(lineCode).stream()
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Retrieve a specific bus by ID.
-     * @param busId Bus identifier
-     * @return Bus as DTO
-     * @throws NoSuchElementException if bus not found
-     */
-    @Transactional(readOnly = true)
-    public BusDto getBusById(UUID busId) {
-        log.debug("Fetching bus with ID: {}", busId);
-        return busRepository.findById(busId)
-                .map(this::mapToDto)
-                .orElseThrow(() -> {
-                    log.warn("Bus not found with ID: {}", busId);
-                    return new NoSuchElementException("Bus not found with ID: " + busId);
-                });
-    }
-    
-    /**
-     * Update bus information.
-     * @param busId Bus identifier
-     * @param createBusDto Updated bus data
-     * @return Updated bus as DTO
-     */
-    public BusDto updateBus(UUID busId, CreateBusDto createBusDto) {
-        log.info("Updating bus with ID: {}", busId);
+
+    @Transactional
+    public BusResponse updateBus(UUID id, BusRequest request) {
+        log.info("Updating bus with ID: {}", id);
         
-        Bus bus = busRepository.findById(busId)
-                .orElseThrow(() -> {
-                    log.warn("Bus not found with ID: {}", busId);
-                    return new NoSuchElementException("Bus not found with ID: " + busId);
-                });
+        Bus bus = busRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + id));
+
+        // Check if bus number is being changed and if it already exists
+        if (!bus.getBusNumber().equals(request.getBusNumber()) && 
+            busRepository.existsByBusNumber(request.getBusNumber())) {
+            throw new IllegalArgumentException("Bus with number " + request.getBusNumber() + " already exists");
+        }
+
+        Status oldStatus = bus.getStatus();
         
-        // Verify matricule uniqueness if changed
-        if (!bus.getMatricule().equals(createBusDto.getMatricule())
-                && busRepository.findByMatricule(createBusDto.getMatricule()).isPresent()) {
-            log.warn("Bus with matricule {} already exists", createBusDto.getMatricule());
-            throw new IllegalArgumentException("A bus with this matricule already exists");
+        bus.setBusNumber(request.getBusNumber());
+        bus.setLineCode(request.getLineCode());
+        bus.setCapacity(request.getCapacity());
+        
+        if (request.getStatus() != null && !request.getStatus().equals(oldStatus)) {
+            bus.setStatus(request.getStatus());
         }
         
-        BusStatus oldStatus = bus.getStatus();
-        bus.setMatricule(createBusDto.getMatricule());
-        bus.setCapacity(createBusDto.getCapacity());
-        bus.setStatus(createBusDto.getStatus());
-        
-        // Update route if provided
-        if (createBusDto.getCurrentRouteId() != null) {
-            Route route = routeRepository.findById(UUID.fromString(createBusDto.getCurrentRouteId()))
-                    .orElse(null);
-            bus.setCurrentRoute(route);
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            bus.setLatitude(request.getLatitude());
+            bus.setLongitude(request.getLongitude());
+            bus.setSpeed(request.getSpeed());
+            bus.setHeading(request.getHeading());
+            bus.setLastLocationUpdate(LocalDateTime.now());
         }
-        
+
         Bus updatedBus = busRepository.save(bus);
-        log.info("Bus updated successfully with ID: {}", busId);
+        log.info("Bus updated successfully with ID: {}", updatedBus.getId());
         
         // Publish status change event if status changed
-        if (!oldStatus.equals(createBusDto.getStatus())) {
-            publishBusStatusEvent(busId.toString(), oldStatus.toString(), createBusDto.getStatus().toString());
+        if (request.getStatus() != null && !request.getStatus().equals(oldStatus)) {
+            BusStatusEvent statusEvent = new BusStatusEvent(
+                updatedBus.getId().toString(),
+                updatedBus.getBusNumber(),
+                updatedBus.getLineCode(),
+                oldStatus,
+                updatedBus.getStatus(),
+                LocalDateTime.now()
+            );
+            kafkaProducerService.publishStatusChange(statusEvent);
         }
         
-        return mapToDto(updatedBus);
+        return mapToResponse(updatedBus);
     }
-    
-    /**
-     * Assign a bus to a route.
-     * @param busId Bus identifier
-     * @param routeId Route identifier
-     * @return Updated bus as DTO
-     */
-    public BusDto assignRoute(UUID busId, String routeId) {
-        log.info("Assigning bus {} to route {}", busId, routeId);
+
+    @Transactional
+    public BusResponse updateBusLocation(UUID id, LocationUpdateRequest request) {
+        log.info("Updating location for bus ID: {}", id);
         
-        Bus bus = busRepository.findById(busId)
-                .orElseThrow(() -> {
-                    log.warn("Bus not found with ID: {}", busId);
-                    return new NoSuchElementException("Bus not found with ID: " + busId);
-                });
-        
-        Route route = routeRepository.findById(UUID.fromString(routeId))
-                .orElseThrow(() -> new NoSuchElementException("Route not found with ID: " + routeId));
-        
-        bus.setCurrentRoute(route);
+        Bus bus = busRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + id));
+
+        bus.setLatitude(request.getLatitude());
+        bus.setLongitude(request.getLongitude());
+        bus.setSpeed(request.getSpeed());
+        bus.setHeading(request.getHeading());
+        bus.setLastLocationUpdate(LocalDateTime.now());
+
         Bus updatedBus = busRepository.save(bus);
-        log.info("Bus {} assigned to route {}", busId, route.getLineNumber());
-        
-        return mapToDto(updatedBus);
-    }
-    
-    /**
-     * Delete a bus from the fleet.
-     * @param busId Bus identifier
-     */
-    public void deleteBus(UUID busId) {
-        log.info("Deleting bus with ID: {}", busId);
-        
-        if (!busRepository.existsById(busId)) {
-            log.warn("Bus not found with ID: {}", busId);
-            throw new NoSuchElementException("Bus not found with ID: " + busId);
-        }
-        
-        busRepository.deleteById(busId);
-        log.info("Bus deleted successfully with ID: {}", busId);
-    }
-    
-    /**
-     * Get the last known location of a bus.
-     * @param busId Bus identifier
-     * @return Bus location DTO with latest position
-     */
-    @Transactional(readOnly = true)
-    public BusLocationDto getLastLocation(UUID busId) {
-        log.debug("Fetching last location for bus: {}", busId);
-        
-        Bus bus = busRepository.findById(busId)
-                .orElseThrow(() -> new NoSuchElementException("Bus not found with ID: " + busId));
-        
-        return BusLocationDto.builder()
-                .busId(bus.getBusId())
-                .matricule(bus.getMatricule())
-                .latitude(bus.getLastLatitude())
-                .longitude(bus.getLastLongitude())
-                .speed(null) // Speed not stored in Bus entity
-                .timestamp(bus.getLastPositionTime())
-                .build();
-    }
-    
-    /**
-     * Get all active bus locations.
-     * @return List of locations for all active buses
-     */
-    @Transactional(readOnly = true)
-    public List<BusLocationDto> getAllActiveBusLocations() {
-        log.debug("Fetching all active bus locations");
-        return busRepository.findAllActiveBuses().stream()
-                .map(bus -> BusLocationDto.builder()
-                        .busId(bus.getBusId())
-                        .matricule(bus.getMatricule())
-                        .latitude(bus.getLastLatitude())
-                        .longitude(bus.getLastLongitude())
-                        .timestamp(bus.getLastPositionTime())
-                        .build())
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Update bus position with GPS data and persist to history.
-     * Publishes location update event to Kafka.
-     * 
-     * @param busId Bus identifier
-     * @param latitude GPS latitude coordinate
-     * @param longitude GPS longitude coordinate
-     * @param speed Current speed in km/h
-     * @param timestamp GPS timestamp
-     */
-    public void updateBusPosition(UUID busId, Double latitude, Double longitude, Double speed, LocalDateTime timestamp) {
-        log.debug("Updating position for bus {} at [{}, {}]", busId, latitude, longitude);
-        
-        Bus bus = busRepository.findById(busId)
-                .orElseThrow(() -> new NoSuchElementException("Bus not found with ID: " + busId));
-        
-        // Update last known position
-        bus.setLastLatitude(latitude);
-        bus.setLastLongitude(longitude);
-        bus.setLastPositionTime(timestamp);
-        busRepository.save(bus);
-        
-        // Persist to history
-        BusLocationHistory history = BusLocationHistory.builder()
-                .busId(busId)
-                .timestamp(timestamp)
-                .latitude(latitude)
-                .longitude(longitude)
-                .speed(speed)
-                .build();
-        busLocationHistoryRepository.save(history);
+        log.info("Bus location updated successfully for ID: {}", updatedBus.getId());
         
         // Publish location update event
-        String routeId = bus.getCurrentRoute() != null ? bus.getCurrentRoute().getRouteId().toString() : null;
-        publishLocationUpdateEvent(busId.toString(), routeId, latitude, longitude, timestamp);
+        BusLocationEvent locationEvent = new BusLocationEvent(
+            updatedBus.getId().toString(),
+            updatedBus.getBusNumber(),
+            updatedBus.getLineCode(),
+            updatedBus.getLatitude(),
+            updatedBus.getLongitude(),
+            updatedBus.getSpeed(),
+            updatedBus.getHeading(),
+            LocalDateTime.now()
+        );
+        kafkaProducerService.publishLocationUpdate(locationEvent);
         
-        log.debug("Bus position updated and persisted for bus {}", busId);
+        return mapToResponse(updatedBus);
     }
-    
-    /**
-     * Get location history for a bus within a time period.
-     * @param busId Bus identifier
-     * @param startTime Start of time period
-     * @param endTime End of time period
-     * @return List of location history records
-     */
-    @Transactional(readOnly = true)
-    public List<BusLocationHistory> getLocationHistory(UUID busId, LocalDateTime startTime, LocalDateTime endTime) {
-        log.debug("Fetching location history for bus {} from {} to {}", busId, startTime, endTime);
-        return busLocationHistoryRepository.findBusLocationHistory(busId, startTime, endTime);
-    }
-    
-    // ===== Private Helper Methods =====
-    
-    /**
-     * Publish bus status change event to Kafka.
-     */
-    private void publishBusStatusEvent(String busId, String oldStatus, String newStatus) {
-        BusStatusEvent event = BusStatusEvent.builder()
-                .busId(busId)
-                .oldStatus(oldStatus)
-                .newStatus(newStatus)
-                .timestamp(LocalDateTime.now())
-                .build();
+
+    @Transactional
+    public void deleteBus(UUID id) {
+        log.info("Deleting bus with ID: {}", id);
         
-        kafkaTemplate.send(TOPIC_BUS_STATUS_EVENTS, busId, event);
-        log.info("Published status event for bus {}: {} -> {}", busId, oldStatus, newStatus);
+        if (!busRepository.existsById(id)) {
+            throw new IllegalArgumentException("Bus not found with ID: " + id);
+        }
+
+        busRepository.deleteById(id);
+        log.info("Bus deleted successfully with ID: {}", id);
     }
-    
-    /**
-     * Publish bus location update event to Kafka.
-     */
-    private void publishLocationUpdateEvent(String busId, String routeId, Double latitude, Double longitude, LocalDateTime timestamp) {
-        BusLocationUpdateEvent event = BusLocationUpdateEvent.builder()
-                .busId(busId)
-                .routeId(routeId)
-                .latitude(latitude)
-                .longitude(longitude)
-                .timestamp(timestamp)
-                .build();
-        
-        kafkaTemplate.send(TOPIC_BUS_LOCATION_UPDATES, busId, event);
-        log.debug("Published location update event for bus {}", busId);
-    }
-    
-    /**
-     * Convert Bus entity to BusDto.
-     */
-    private BusDto mapToDto(Bus bus) {
-        String routeId = bus.getCurrentRoute() != null ? bus.getCurrentRoute().getRouteId().toString() : null;
-        return BusDto.builder()
-                .busId(bus.getBusId())
-                .matricule(bus.getMatricule())
-                .capacity(bus.getCapacity())
-                .status(bus.getStatus())
-                .currentRouteId(routeId)
-                .lastLatitude(bus.getLastLatitude())
-                .lastLongitude(bus.getLastLongitude())
-                .lastPositionTime(bus.getLastPositionTime())
-                .createdAt(bus.getCreatedAt())
-                .updatedAt(bus.getUpdatedAt())
-                .build();
+
+    private BusResponse mapToResponse(Bus bus) {
+        BusResponse response = new BusResponse();
+        response.setId(bus.getId());
+        response.setBusNumber(bus.getBusNumber());
+        response.setLineCode(bus.getLineCode());
+        response.setCapacity(bus.getCapacity());
+        response.setStatus(bus.getStatus());
+        response.setLatitude(bus.getLatitude());
+        response.setLongitude(bus.getLongitude());
+        response.setSpeed(bus.getSpeed());
+        response.setHeading(bus.getHeading());
+        response.setLastLocationUpdate(bus.getLastLocationUpdate());
+        response.setCreatedAt(bus.getCreatedAt());
+        response.setUpdatedAt(bus.getUpdatedAt());
+        return response;
     }
 }
