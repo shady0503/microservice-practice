@@ -20,7 +20,7 @@ public class ArretServiceImpl implements ArretService {
     @Override
     public List<ArretDTO> getAllArrets() {
         return arretRepository.findAll().stream()
-                .map(a -> new ArretDTO(a.getId(), a.getNom(), a.getLocalisation()))
+                .map(a -> new ArretDTO(a.getId(), a.getNom(), a.getLatitude(), a.getLongitude(), a.getAddress()))
                 .collect(Collectors.toList());
     }
 
@@ -28,16 +28,18 @@ public class ArretServiceImpl implements ArretService {
     public ArretDTO getArretById(Long id) {
         Arret arret = arretRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Arret non trouvé"));
-        return new ArretDTO(arret.getId(), arret.getNom(), arret.getLocalisation());
+        return new ArretDTO(arret.getId(), arret.getNom(), arret.getLatitude(), arret.getLongitude(), arret.getAddress());
     }
 
     @Override
     public ArretDTO createArret(ArretCreateRequest request) {
         Arret arret = new Arret();
         arret.setNom(request.getNom());
-        arret.setLocalisation(request.getLocalisation());
+        arret.setLatitude(request.getLatitude());
+        arret.setLongitude(request.getLongitude());
+        arret.setAddress(request.getAddress());
         Arret saved = arretRepository.save(arret);
-        return new ArretDTO(saved.getId(), saved.getNom(), saved.getLocalisation());
+        return new ArretDTO(saved.getId(), saved.getNom(), saved.getLatitude(), saved.getLongitude(), saved.getAddress());
     }
 
     @Override

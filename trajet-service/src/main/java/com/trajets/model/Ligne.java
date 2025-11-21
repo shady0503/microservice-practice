@@ -19,6 +19,9 @@ public class Ligne {
     @Column(length = 255)
     private String description;
 
+    @Column(columnDefinition = "TEXT")
+    private String routeGeometry;
+
     // --- Constructeurs ---
     public Ligne() {}
 
@@ -36,4 +39,6 @@ public class Ligne {
     public void setNom(String nom) { this.nom = nom; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getRouteGeometry() { return routeGeometry; }
+    public void setRouteGeometry(String routeGeometry) { this.routeGeometry = routeGeometry; }
 }

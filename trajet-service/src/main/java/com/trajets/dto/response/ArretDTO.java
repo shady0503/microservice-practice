@@ -12,5 +12,7 @@ import lombok.Setter;
 public class ArretDTO {
     private Long id;
     private String nom;
-    private String localisation;
+    private Double latitude;
+    private Double longitude;
+    private String address;
 }

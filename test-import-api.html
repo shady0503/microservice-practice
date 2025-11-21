@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Import API</title>
+</head>
+<body>
+  <h1>Test Import API</h1>
+  <button id="testBtn">Test Import Endpoint</button>
+  <pre id="output"></pre>
+
+  <script>
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const output = document.getElementById('output');
+      output.textContent = 'Testing...';
+
+      // Sample test data matching the expected format
+      const testData = {
+        routes: [
+          {
+            routeId: "123456",
+            ref: "TEST",
+            name: "Test Route",
+            from: "Start",
+            to: "End",
+            operator: "Test Operator",
+            colour: "#ff0000",
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [-6.8498, 33.9716],
+                [-6.8500, 33.9720],
+                [-6.8505, 33.9725]
+              ]
+            },
+            stops: [
+              {
+                nodeId: "1",
+                name: "Stop 1",
+                latitude: 33.9716,
+                longitude: -6.8498
+              },
+              {
+                nodeId: "2",
+                name: "Stop 2",
+                latitude: 33.9720,
+                longitude: -6.8500
+              }
+            ]
+          }
+        ]
+      };
+
+      try {
+        console.log('Sending request to:', 'http://localhost:8081/api/import/geojson-routes');
+        console.log('Data:', JSON.stringify(testData, null, 2));
+
+        const response = await fetch('http://localhost:8081/api/import/geojson-routes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(testData)
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+
+        const result = await response.json();
+        console.log('Result:', result);
+
+        output.textContent = JSON.stringify(result, null, 2);
+
+        if (response.ok) {
+          output.style.color = 'green';
+        } else {
+          output.style.color = 'red';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        output.textContent = 'Error: ' + error.message;
+        output.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>

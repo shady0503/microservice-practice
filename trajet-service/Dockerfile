@@ -24,5 +24,5 @@ EXPOSE 8080
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV LANG=C.UTF-8
 
-# Lancer l’application
-ENTRYPOINT ["java", "-jar", "service-trajet-horaire.jar"]
+# Lancer l'application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar service-trajet-horaire.jar"]

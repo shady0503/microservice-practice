@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Rabat-Salé-Témara Bus Routes</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; }
+    
+    #map { 
+      height: 100vh; 
+      width: 100%;
+    }
+    
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-width: 320px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    #status {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      font-size: 13px;
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .loading { 
+      color: #ff9800; 
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+    }
+    .success { 
+      color: #4caf50; 
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+    }
+    .error { 
+      color: #f44336; 
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,152,0,0.3);
+      border-top-color: #ff9800;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    #searchBox {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    #searchBox:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+    
+    #routeList {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+    
+    #routeList::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #routeList::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    #routeList::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+    
+    #routeList::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    
+    .route-item {
+      padding: 10px;
+      margin: 4px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      border-left: 4px solid;
+      background: #f9f9f9;
+      font-size: 13px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .route-item:hover {
+      background: #e3f2fd;
+      transform: translateX(2px);
+    }
+    
+    .route-item.selected {
+      background: #bbdefb;
+      font-weight: 500;
+    }
+    
+    .route-item.hidden {
+      display: none;
+    }
+    
+    .route-info {
+      flex: 1;
+    }
+    
+    .route-code {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    
+    .route-desc {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .route-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .route-action-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .route-action-btn:hover {
+      background: #2196f3;
+      color: white;
+      border-color: #2196f3;
+    }
+    
+    h3 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    #loadFromDbBtn {
+      background: #4caf50;
+      color: white;
+    }
+    
+    #loadFromDbBtn:hover:not(:disabled) {
+      background: #45a049;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(76,175,80,0.3);
+    }
+    
+    #loadFromOsmBtn {
+      background: #2196f3;
+      color: white;
+    }
+    
+    #loadFromOsmBtn:hover:not(:disabled) {
+      background: #1976d2;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(33,150,243,0.3);
+    }
+    
+    #clearBtn {
+      background: #f44336;
+      color: white;
+    }
+    
+    #clearBtn:hover:not(:disabled) {
+      background: #d32f2f;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(244,67,54,0.3);
+    }
+    
+    #toggleAllBtn {
+      background: #9c27b0;
+      color: white;
+    }
+    
+    #toggleAllBtn:hover:not(:disabled) {
+      background: #7b1fa2;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(156,39,176,0.3);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .stats {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      border-left: 4px solid #2196f3;
+    }
+    
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 4px 0;
+    }
+    
+    .stats-label {
+      font-weight: 500;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 8px 0;
+      display: none;
+    }
+    
+    .progress-bar.active {
+      display: block;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2196f3, #21cbf3);
+      width: 0%;
+      transition: width 0.3s;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -100% 0; }
+      100% { background-position: 100% 0; }
+    }
+    
+    .section-divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 15px 0;
+    }
+    
+    .filter-section {
+      margin: 10px 0;
+    }
+    
+    .filter-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .no-routes {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  
+  <div id="controls">
+    <h3>🚌 Bus Route Viewer</h3>
+    <div id="status" class="loading">Ready to load routes</div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <button id="loadFromDbBtn">📂 Load from Database</button>
+    <button id="loadFromOsmBtn">🌐 Fetch from OSM & Save</button>
+    <button id="clearBtn" style="display:none;">🗑️ Clear Routes</button>
+    <button id="toggleAllBtn" style="display:none;">👁️ Toggle All Routes</button>
+    
+    <div class="stats" id="stats" style="display:none;"></div>
+    
+    <div class="section-divider" style="display:none;" id="divider"></div>
+    
+    <div class="filter-section" style="display:none;" id="filterSection">
+      <div class="filter-label">🔍 Search Routes</div>
+      <input type="text" id="searchBox" placeholder="Search by code or name...">
+    </div>
+    
+    <div id="routeList"></div>
+  </div>
+
+  <script type="module">
+    // Import osmtogeojson from CDN
+    import osmtogeojson from 'https://cdn.jsdelivr.net/npm/osmtogeojson@3.0.0-beta.5/+esm';
+
+    const API_BASE = 'http://localhost:8081/api';
+
+    // Initialize map centered on Rabat
+    const map = L.map('map').setView([33.9716, -6.8498], 12);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Storage for route layers and data
+    let routeLayers = {};
+    let routesData = [];
+    let allRoutesVisible = true;
+
+    // Color palette for routes
+    const colors = [
+      '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+      '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b',
+      '#27ae60', '#2980b9', '#8e44ad', '#d35400', '#7f8c8d',
+      '#c0392b', '#16a085', '#f39c12', '#2c3e50', '#e91e63'
+    ];
+
+    function getColorForRoute(index) {
+      return colors[index % colors.length];
+    }
+
+    function updateStatus(message, type = 'loading', showSpinner = false) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = type;
+      statusEl.innerHTML = showSpinner ? `<span class="spinner"></span>${message}` : message;
+    }
+
+    function updateProgress(percent) {
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      
+      if (percent > 0 && percent < 100) {
+        progressBar.classList.add('active');
+        progressFill.style.width = percent + '%';
+      } else {
+        progressBar.classList.remove('active');
+        progressFill.style.width = '0%';
+      }
+    }
+
+    function setButtonsState(loading) {
+      document.getElementById('loadFromDbBtn').disabled = loading;
+      document.getElementById('loadFromOsmBtn').disabled = loading;
+    }
+
+    function showControls() {
+      document.getElementById('clearBtn').style.display = 'block';
+      document.getElementById('toggleAllBtn').style.display = 'block';
+      document.getElementById('divider').style.display = 'block';
+      document.getElementById('filterSection').style.display = 'block';
+      document.getElementById('stats').style.display = 'block';
+    }
+
+    function hideControls() {
+      document.getElementById('clearBtn').style.display = 'none';
+      document.getElementById('toggleAllBtn').style.display = 'none';
+      document.getElementById('divider').style.display = 'none';
+      document.getElementById('filterSection').style.display = 'none';
+      document.getElementById('stats').style.display = 'none';
+    }
+
+    // Load routes from database (fast!)
+    async function loadFromDatabase() {
+      updateStatus('Loading routes from database...', 'loading', true);
+      setButtonsState(true);
+      updateProgress(30);
+
+      try {
+        const response = await fetch(`${API_BASE}/lignes`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        updateProgress(60);
+        const lignes = await response.json();
+
+        if (!lignes || lignes.length === 0) {
+          updateStatus('⚠️ No routes in database. Fetch from OSM first!', 'error');
+          setButtonsState(false);
+          updateProgress(0);
+          return;
+        }
+
+        updateProgress(80);
+        displayRoutes(lignes);
+        updateProgress(100);
+
+        updateStatus(`✅ Loaded ${lignes.length} routes successfully!`, 'success');
+        
+        const totalStops = lignes.reduce((sum, l) => sum + (l.stopsCount || 0), 0);
+        const hasGeometry = lignes.filter(l => l.routeGeometry).length;
+        
+        document.getElementById('stats').innerHTML = `
+          <div class="stats-row">
+            <span class="stats-label">📍 Routes:</span>
+            <span>${lignes.length}</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">🗺️ With Geometry:</span>
+            <span>${hasGeometry}</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">💾 Source:</span>
+            <span>PostgreSQL</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">⚡ Load Time:</span>
+            <span>Instant</span>
+          </div>
+        `;
+        
+        showControls();
+        setButtonsState(false);
+        
+        setTimeout(() => updateProgress(0), 500);
+
+      } catch (error) {
+        console.error('Error loading from database:', error);
+        updateStatus(`❌ Error: ${error.message}`, 'error');
+        setButtonsState(false);
+        updateProgress(0);
+      }
+    }
+
+    // Fetch from OSM, convert with osmtogeojson, and save to database
+    async function loadFromOSM() {
+      updateStatus('Fetching routes from OpenStreetMap...', 'loading', true);
+      setButtonsState(true);
+      updateProgress(10);
+
+      try {
+        // Step 1: Fetch from Overpass API
+        updateProgress(20);
+        const query = `[out:json][timeout:90];
+(
+  area["name"="Rabat"]["admin_level"="6"]->.r;
+  area["name"="Salé"]["admin_level"="6"]->.s;
+  area["name"="Témara"]["admin_level"="6"]->.t;
+  (
+    relation["route"="bus"](area.r);
+    relation["route"="bus"](area.s);
+    relation["route"="bus"](area.t);
+  );
+);
+out geom;`;
+
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        
+        updateStatus('⏳ Querying Overpass API...', 'loading', true);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Overpass API error: ${response.status}`);
+        }
+        
+        updateProgress(40);
+        const osmData = await response.json();
+
+        if (!osmData.elements || osmData.elements.length === 0) {
+          throw new Error('No bus routes found in OSM data');
+        }
+
+        const routeCount = osmData.elements.filter(e => e.type === 'relation').length;
+        updateStatus(`🔄 Converting ${routeCount} routes to GeoJSON...`, 'loading', true);
+        updateProgress(50);
+
+        // Step 2: Convert to GeoJSON using osmtogeojson
+        const geojson = osmtogeojson(osmData);
+
+        // Step 3: Extract route data and prepare for backend
+        updateStatus(`📦 Preparing ${routeCount} routes for import...`, 'loading', true);
+        updateProgress(60);
+        const routesData = await prepareRoutesForBackend(osmData, geojson);
+
+        updateStatus(`💾 Saving ${routesData.length} routes to database...`, 'loading', true);
+        updateProgress(70);
+
+        // Step 4: Send to backend
+        const saveResponse = await fetch(`${API_BASE}/import/geojson-routes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ routes: routesData })
+        });
+
+        if (!saveResponse.ok) {
+          const errorText = await saveResponse.text();
+          throw new Error(`Failed to save: ${saveResponse.status} - ${errorText}`);
+        }
+
+        updateProgress(85);
+        const result = await saveResponse.json();
+
+        updateStatus(`✅ Saved to database! Loading routes...`, 'success', true);
+        updateProgress(90);
+
+        // Step 5: Load from database to display
+        await loadFromDatabase();
+
+      } catch (error) {
+        console.error('Error loading from OSM:', error);
+        updateStatus(`❌ Error: ${error.message}`, 'error');
+        setButtonsState(false);
+        updateProgress(0);
+      }
+    }
+
+    function prepareRoutesForBackend(osmData, geojson) {
+      const routes = [];
+      
+      // Extract relations (bus routes)
+      const relations = osmData.elements.filter(e => e.type === 'relation' && e.tags?.route === 'bus');
+      
+      relations.forEach(relation => {
+        const routeId = relation.id.toString();
+        const tags = relation.tags || {};
+        
+        // Find corresponding GeoJSON features
+        const routeFeatures = geojson.features.filter(f => {
+          const fid = f.properties?.['@id']?.replace('relation/', '') || f.id?.replace('relation/', '');
+          return fid === routeId;
+        });
+
+        if (routeFeatures.length === 0) return;
+
+        // Combine all LineStrings into one geometry
+        let geometry;
+        if (routeFeatures.length === 1 && routeFeatures[0].geometry) {
+          geometry = routeFeatures[0].geometry;
+        } else {
+          // Merge multiple features into MultiLineString
+          const coordinates = routeFeatures
+            .filter(f => f.geometry)
+            .map(f => f.geometry.type === 'LineString' ? f.geometry.coordinates : f.geometry.coordinates)
+            .flat();
+          geometry = {
+            type: 'LineString',
+            coordinates: coordinates[0] || []
+          };
+        }
+
+        // Extract stops
+        const stops = [];
+        const stopNodes = osmData.elements.filter(e => e.type === 'node');
+        
+        relation.members?.forEach(member => {
+          if (member.type === 'node' && (member.role === 'stop' || member.role === 'platform')) {
+            const stopNode = stopNodes.find(n => n.id === member.ref);
+            if (stopNode && stopNode.lat && stopNode.lon) {
+              stops.push({
+                nodeId: stopNode.id.toString(),
+                name: stopNode.tags?.name || `Stop ${stopNode.id}`,
+                latitude: stopNode.lat,
+                longitude: stopNode.lon
+              });
+            }
+          }
+        });
+
+        routes.push({
+          routeId: routeId,
+          ref: tags.ref || `Route ${routeId}`,
+          name: tags.name || tags.ref || `Route ${routeId}`,
+          from: tags.from || 'Unknown',
+          to: tags.to || 'Unknown',
+          operator: tags.operator || 'ALSA',
+          colour: tags.colour || '#3498db',
+          geometry: geometry,
+          stops: stops
+        });
+      });
+
+      return routes;
+    }
+
+    function displayRoutes(lignes) {
+      const routeListEl = document.getElementById('routeList');
+      routeListEl.innerHTML = '';
+
+      // Clear existing layers
+      Object.values(routeLayers).forEach(layer => map.removeLayer(layer));
+      routeLayers = {};
+      routesData = lignes;
+
+      let displayedCount = 0;
+
+      lignes.forEach((ligne, index) => {
+        if (!ligne.routeGeometry) return;
+
+        try {
+          const geom = JSON.parse(ligne.routeGeometry);
+          const color = getColorForRoute(index);
+
+          // Create layer
+          const routeLayer = L.geoJSON(geom, {
+            style: {
+              color: color,
+              weight: 4,
+              opacity: 0.7,
+              lineJoin: 'round',
+              lineCap: 'round'
+            },
+            onEachFeature: (feature, layer) => {
+              layer.bindPopup(`
+                <div style="min-width: 200px;">
+                  <strong style="font-size: 16px;">🚌 ${ligne.code}</strong><br>
+                  <div style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                    ${ligne.nom}
+                  </div>
+                  <small style="color: #666;">${ligne.description || 'No description'}</small>
+                </div>
+              `, {
+                maxWidth: 300
+              });
+            }
+          }).addTo(map);
+
+          routeLayers[ligne.id] = { layer: routeLayer, data: ligne, color: color, visible: true };
+          displayedCount++;
+
+          // Add to route list
+          const routeItem = document.createElement('div');
+          routeItem.className = 'route-item selected';
+          routeItem.style.borderColor = color;
+          routeItem.dataset.routeId = ligne.id;
+          routeItem.dataset.searchText = `${ligne.code} ${ligne.nom} ${ligne.description || ''}`.toLowerCase();
+          
+          routeItem.innerHTML = `
+            <div class="route-info">
+              <div class="route-code">${ligne.code}</div>
+              <div class="route-desc">${ligne.description || ligne.nom}</div>
+            </div>
+            <div class="route-actions">
+              <button class="route-action-btn zoom-btn" title="Zoom to route">🔍</button>
+            </div>
+          `;
+          
+          // Toggle visibility
+          routeItem.addEventListener('click', (e) => {
+            if (e.target.classList.contains('zoom-btn')) {
+              // Zoom button clicked
+              try {
+                map.fitBounds(routeLayer.getBounds(), { padding: [50, 50], maxZoom: 15 });
+              } catch (err) {
+                console.warn('Could not zoom to route');
+              }
+            } else {
+              // Toggle visibility
+              const routeInfo = routeLayers[ligne.id];
+              if (routeInfo.visible) {
+                map.removeLayer(routeLayer);
+                routeItem.classList.remove('selected');
+                routeInfo.visible = false;
+              } else {
+                map.addLayer(routeLayer);
+                routeItem.classList.add('selected');
+                routeInfo.visible = true;
+              }
+            }
+          });
+          
+          routeListEl.appendChild(routeItem);
+
+        } catch (e) {
+          console.error(`Error displaying route ${ligne.code}:`, e);
+        }
+      });
+
+      if (displayedCount === 0) {
+        routeListEl.innerHTML = '<div class="no-routes">No routes with geometry found</div>';
+      } else {
+        // Fit map to all routes
+        try {
+          const allLayers = Object.values(routeLayers).map(r => r.layer);
+          if (allLayers.length > 0) {
+            const group = L.featureGroup(allLayers);
+            map.fitBounds(group.getBounds(), { padding: [50, 50] });
+          }
+        } catch (e) {
+          console.warn('Could not fit bounds to all routes');
+        }
+      }
+    }
+
+    function toggleAllRoutes() {
+      const allVisible = Object.values(routeLayers).every(r => r.visible);
+      
+      Object.entries(routeLayers).forEach(([id, routeInfo]) => {
+        const routeItem = document.querySelector(`[data-route-id="${id}"]`);
+        
+        if (allVisible) {
+          // Hide all
+          map.removeLayer(routeInfo.layer);
+          routeInfo.visible = false;
+          if (routeItem) routeItem.classList.remove('selected');
+        } else {
+          // Show all
+          map.addLayer(routeInfo.layer);
+          routeInfo.visible = true;
+          if (routeItem) routeItem.classList.add('selected');
+        }
+      });
+      
+      allRoutesVisible = !allVisible;
+      document.getElementById('toggleAllBtn').textContent = 
+        allRoutesVisible ? '👁️ Hide All Routes' : '👁️ Show All Routes';
+    }
+
+    function clearRoutes() {
+      Object.values(routeLayers).forEach(r => map.removeLayer(r.layer));
+      routeLayers = {};
+      routesData = [];
+      
+      updateStatus('Ready to load routes', 'loading');
+      updateProgress(0);
+      hideControls();
+      document.getElementById('routeList').innerHTML = '';
+      document.getElementById('searchBox').value = '';
+      setButtonsState(false);
+    }
+
+    // Search functionality
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const routeItems = document.querySelectorAll('.route-item');
+      
+      routeItems.forEach(item => {
+        const searchText = item.dataset.searchText || '';
+        if (searchText.includes(searchTerm)) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    });
+
+    // Event listeners
+    document.getElementById('loadFromDbBtn').addEventListener('click', loadFromDatabase);
+    document.getElementById('loadFromOsmBtn').addEventListener('click', loadFromOSM);
+    document.getElementById('clearBtn').addEventListener('click', clearRoutes);
+    document.getElementById('toggleAllBtn').addEventListener('click', toggleAllRoutes);
+
+    // Auto-load from database on page load
+    setTimeout(() => {
+      loadFromDatabase();
+    }, 500);
+
+  </script>
+</body>
+</html>
