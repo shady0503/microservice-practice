@@ -1,0 +1,125 @@
+ref,name,osm_relation_id
+32H,L32H: Harhoura – Bab El Had,5278778
+32H,L32H: Bab Lhad – Harhoura,5279026
+31,L31: Bab El Had – Mers El Kheir,6149081
+31,L31: Mers El Kheir – Bab El Had,7432228
+29,L29: Douar jdid – Shoul,7351721
+29,L29: Shoul – Douar jdid,14672094
+L30,L30: 30 Bir Anzaran – Sidi Taibi - Oulad Sbita,10220311
+L30,L30: 30 Oulad Sbita – Bir Anzaran,14592230
+101,L101: Hay Ennahda – Hay Fath,12949544
+101,L101: Hay Fath – Hay Ennahda,14664282
+107,L107: Bab El Had – Hay Fath,12951541
+107,L107: Hay Fath – Bab El Had,14667848
+104,L104: mini parc – Hay Fath,12951805
+104,L104: Hay Fath – mini parc,14667676
+21,L21: Sala Al Jadida – Bab Chelah,12968229
+21,L21: Bab Chelah – Sala Al Jadida,14656248
+204,L204: Bouknadel – Sala Al Jadida,12979142
+204,L204: Sala Al Jadida – Bouknadel,14668978
+306,L306: Commune Essebbah – Maghreb El Arabi,12980789
+306,L306: El Maghreb Arabi – Commune Essebbah,14669395
+102,L102: Z.Industriele – Place D'Italie,12980790
+102,L102: Place D'Italie – Z.Industriele,14664698
+201,L201: Zerdal – Technopolis,12992988
+201,L201: Technopolis – zerdal,14667997
+22,L22: Bouknadel – Bab Chelah,12993079
+22,L22: Bab Chelah – Bouknadel,14656339
+23,L23: Sidi Eddaoui – Bab Chelah,12993246
+23,L23: Bab Chelah – Sidi Eddaoui,14656401
+24,L24: Maamoura – Bab Chelah,12993328
+24,L24: Bab Chelah – Maamoura,14658395
+25,L25: Bayt Al Mostakbal – Bab Chelah,12993500
+25,L25: Bab Chelah – Bayt Al Mostakbal,14658873
+303,L303: Ain Aouda – Tamesna - Maghreb al Arabi,13009984
+303,L303: El Maghreb Arabi – Ain Aouda,14669023
+26,L26: Mazza – Bab Chelah,13010076
+26,L26: Bab Chelah – Mazza,14659088
+1,L1: Doha – Bab Chelah,13010110
+1,L1: Bab Chelah – Doha,14659790
+2,L2: Karia – Bab Chelah,13010205
+2,L2: Bab Chelah – Karia,14659938
+4,L4: Zerdal – Bab Chelah,13010252
+4,L4: Bab Chelah – Zerdal,14660190
+5,L5: Sidi Eddaoui سيدي الضاوي – Bab Chelah,13010910
+5,L5: Bab Chelah – Sidi Eddaoui,14660304
+6,L6: Hizb AL Istiklal – Marché de gros Témara,13011115
+6,L6: Marché de gros temara – Hizb AL Istiklal,14660883
+8,L8: Ain Aouda – Bab El Had,13020058
+8,L8: Bab El Had – Ain Aouda,14663820
+10,L10: Sala al Jadida – Hassan,13020197
+10,L10: Hassan – Sala Al Jadida,14663645
+7,L7: Marché de gros Témara – Bab El Had,13020380
+7,L7: Bab El Had – Marché de gros temara,14660977
+L03,L03: 03 Place Moulay Youssef – Ain Sbaa,14592716
+L03,L03: 03 Ain Sbaa – Place Moulay Youssef,14592717
+L02,L02: 02 Ain Ariss – Bir Rami(El Hencha),14593158
+L02,L02: 02 Bir Rami(El Hencha) – Ain Ariss,14593159
+L04,L04: 04 Hay Ouled Arfaa – Haddada,14595055
+L04,L04: 04 Haddada – Hay Ouled Arfaa,14595056
+L05,L05: 05 Hay Ouled Arfaa – Hay Ouled Oujih,14595217
+L05,L05: 05 Hay Ouled Oujih – Hay Ouled Arfaa,14595218
+L01,L01: 01 Ain Sebaa – Gare de Train,14595565
+L01,L01: 01 Gare de Train – Ain Sebaa,14595566
+L06,L06: 06 Cité Saknina – Facultés,14596792
+L06,L06: 06 Facultés – Cité Saknina,14596793
+L07,L07: 07 Hay Oulad Mbarek – Hay Lala Meryem,14596839
+L07,L07: 07 Hay Lala Meryem – Hay Oulad Mbarek,14596840
+L08,L08: 08 Hay Lala Meryem – Hay El Haouzia,14596919
+L08,L08: 08 Hay El Haouzia – Hay Lala Meryem,14596920
+L32,L32: 32 Ouled Bourahma – Facultés,14599064
+L32,L32: 32 Facultés – Ouled Bourahma,14599065
+L34,L34: 34 Sidi Alal Tazi – Facultés,14599315
+L34,L34: 34 Facultés – Sidi Alal Tazi,14599316
+L33,L33: 33 Facultés – Sidi Alal Tazi,14599317
+L33,L33: 33 Sidi Alal Tazi – Facultés,14599318
+L17,L17: 17 Hay Nkhakhsa – Facultés,14599319
+L17,L17: 17 Facultés – Hay Nkhakhsa,14599320
+L11,L11: 11 Hay Younes(Aliance) – Place Mohamed V,14599724
+L11,L11: 11 Place Mohamed V – Hay Younes(Aliance),14599725
+L16,L16: 16 Bassatine Haj Mansour – Hay Oulad oujih,14599965
+L16,L16: 16 Hay Oulad oujih – Bassatine Haj Mansour,14599966
+L12,L12: 12 Hay Younes(Aliance) – Bir Anzaren,14600115
+L12,L12: 12 Bir Anzaren – Hay Younes(Aliance),14600116
+L13,L13: 13 Bir Anzaren – Kasbat Mehdiya,14600188
+L13,L13: 13 Kasbat Mehdiya – Bir Anzaren,14600189
+L14,L14: 14 Facultés – Hay Oulad oujih,14600202
+L14,L14: 14 Hay Oulad oujih – Facultés,14600203
+L09,L09: 09 Place Mohamed V – Mehdiya,14601520
+L09,L09: 09 Mehdiya – Place Mohamed V,14601521
+L10,L10: 10 Mehdiya – Place Mohamed V,14601522
+L10,L10: 10 Place Mohamed V – Mehdiya,14601523
+306B,L306B: El Maghreb Arabi – Hay Fath(Skhirat),14669501
+306B,L306B: Hay Fath(Skhirat) – Maghreb Arabi,14669502
+106,L106: Hay Fath – Abdelmoumen,14670810
+106,L106: Abdelmoumen – Hay Fath,14670811
+108,L108: Hay Ennahda – Abdelmoumen,14670929
+108,L108: Abdelmoumen – Hay Ennahda,14670930
+3,L3: Sidi Taibi – Bab Chelah,14671163
+3,L3: Bab Chelah – Sidi Taibi,14671164
+9,L9: Karia – Gare Routiere Agdal,14671851
+9,L9: Gare Routiere Agdal – Karia,14671852
+30,L30: Gare Rabat agdal – Wifaq,14672257
+30,L30: Wifaq – Gare Rabat agdal,14672258
+33,L33: Bab El Had – Plage de Skhirat,14672369
+33,L33: Plage de Skhirat – Bab El Had,14672370
+37,L37: Youssoufia – Ain Atik,14676180
+37,L37: Ain Atik – Youssoufia,14676181
+37B,L37B: Youssoufia – Massira,14676182
+37B,L37B: Massira – Youssoufia,14676183
+210AE,L210AE: L210 AE:Gare Agdal – Aeroport,14676496
+210AE,L210AE: L210 AE:Aeroport – Gare Agdal,14676497
+40,L40: Ain Aouda – C.OumAzza,14677599
+40,L40: C.OumAzza – Ain Aouda,14677600
+34,L34: Bab El Had – Ain Atik,14679618
+34,L34: Ain Atik – Bab El Had,14679619
+35,L35: El Maghreb el Arabi(Chiga) – Bab El Had,14679620
+35,L35: Bab El Had – El Maghreb Arabi(Chiga),14679621
+36,L36: Bab El Had – El Maghreb Arabi(Chiga),14679622
+36,L36: El Maghreb Arabi(Chiga) – Bab El Had,14679623
+38,L38: Tamesna – Bab El Had,14679624
+38,L38: Bab El Had – Tamesna,14679625
+39,L39: Clinique Ibn Sina – Annour,14683958
+39,L39: Annour – Clinique Ibn Sina,14683959
+201B,L201B: Zone économique – Chateau Hay Salam,17996730
+201B,L201B: Chateau Hay Salam – Zone économique,17996731
