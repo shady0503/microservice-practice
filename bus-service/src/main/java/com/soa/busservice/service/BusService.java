@@ -3,6 +3,7 @@ package com.soa.busservice.service;
 import com.soa.busservice.dto.BusRequest;
 import com.soa.busservice.dto.BusResponse;
 import com.soa.busservice.dto.LocationUpdateRequest;
+import com.soa.busservice.event.BusLineChangeEvent;
 import com.soa.busservice.event.BusLocationEvent;
 import com.soa.busservice.event.BusStatusEvent;
 import com.soa.busservice.kafka.KafkaProducerService;
@@ -11,6 +12,7 @@ import com.soa.busservice.model.Status;
 import com.soa.busservice.repository.BusRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -187,6 +189,52 @@ public class BusService {
 
         busRepository.deleteById(id);
         log.info("Bus deleted successfully with ID: {}", id);
+    }
+
+    @Transactional
+    public void updateBusLine(UUID id, String newLineCode) {
+        log.info("Updating line for bus ID: {}", id);
+        
+        Bus bus = busRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + id));
+
+        // Publish event if the lineCode changes
+        if (!bus.getLineCode().equals(newLineCode)) {
+            BusLineChangeEvent event = new BusLineChangeEvent(
+                bus.getId().toString(),
+                bus.getLineCode(),
+                newLineCode
+            );
+            kafkaProducerService.publishLineChangeEvent(event);
+
+            // Update the bus entity
+            bus.setLineCode(newLineCode);
+            busRepository.save(bus);
+        }
+    }
+
+    @Transactional
+    public void saveBusWithRetry(Bus bus) {
+        int retries = 3;
+        while (retries > 0) {
+            try {
+                if (bus.getId() != null && busRepository.existsById(bus.getId())) {
+                    Bus existingBus = busRepository.findById(bus.getId()).orElseThrow();
+                    existingBus.updateFrom(bus); // Copy fields from the new bus to the existing one
+                    busRepository.save(existingBus);
+                } else {
+                    busRepository.save(bus);
+                }
+                break;
+            } catch (OptimisticLockingFailureException e) {
+                retries--;
+                log.warn("Retrying save for bus: {}", bus.getBusNumber());
+                if (retries == 0) {
+                    log.error("Failed to save bus after retries: {}", bus.getBusNumber(), e);
+                    throw e;
+                }
+            }
+        }
     }
 
     private BusResponse mapToResponse(Bus bus) {

@@ -58,4 +58,17 @@ public class Bus implements Serializable {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public void updateFrom(Bus other) {
+        this.busNumber = other.getBusNumber();
+        this.lineCode = other.getLineCode();
+        this.capacity = other.getCapacity();
+        this.status = other.getStatus();
+        this.latitude = other.getLatitude();
+        this.longitude = other.getLongitude();
+        this.speed = other.getSpeed();
+        this.heading = other.getHeading();
+        this.lastLocationUpdate = other.getLastLocationUpdate();
+        this.updatedAt = LocalDateTime.now();
+    }
 }

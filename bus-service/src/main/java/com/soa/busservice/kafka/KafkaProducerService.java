@@ -1,5 +1,6 @@
 package com.soa.busservice.kafka;
 
+import com.soa.busservice.event.BusLineChangeEvent;
 import com.soa.busservice.event.BusLocationEvent;
 import com.soa.busservice.event.BusStatusEvent;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class KafkaProducerService {
 
     private static final String LOCATION_TOPIC = "bus.location.updates";
     private static final String STATUS_TOPIC = "bus.status.changes";
+    private static final String LINE_CHANGE_TOPIC = "bus.line.change";
 
     public void publishLocationUpdate(BusLocationEvent event) {
         try {
@@ -33,6 +35,15 @@ public class KafkaProducerService {
                     event.getBusNumber(), event.getOldStatus(), event.getNewStatus(), STATUS_TOPIC);
         } catch (Exception e) {
             log.error("Failed to publish status change for bus: {}", event.getBusNumber(), e);
+        }
+    }
+
+    public void publishLineChangeEvent(BusLineChangeEvent event) {
+        try {
+            kafkaTemplate.send(LINE_CHANGE_TOPIC, event.getBusId(), event);
+            log.info("Published line change event for bus: {} to topic: {}", event.getBusId(), LINE_CHANGE_TOPIC);
+        } catch (Exception e) {
+            log.error("Failed to publish line change event for bus: {}", event.getBusId(), e);
         }
     }
 }
