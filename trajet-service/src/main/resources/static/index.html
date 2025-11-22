@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Routes - Rabat Salé Témara</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .controls select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 200px;
+        }
+        .controls button {
+            padding: 6px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 1000;
+            max-width: 250px;
+        }
+        .legend h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .legend-item:hover {
+            background: #f0f0f0;
+        }
+        .legend-item.active {
+            background: #e3f2fd;
+            font-weight: 600;
+        }
+        .legend-line {
+            width: 30px;
+            height: 4px;
+            margin-right: 8px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .legend-text {
+            font-size: 12px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .loading {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 14px;
+            color: #333;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="controls">
+        <select id="route-filter">
+            <option value="">All Routes</option>
+        </select>
+        <button onclick="resetView()">Reset View</button>
+    </div>
+    <div id="loading" class="loading">Loading bus routes...</div>
+    <div class="legend">
+        <h3>Bus Lines</h3>
+        <div id="legend-items"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Rabat
+        const map = L.map('map').setView([33.9716, -6.8498], 12);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Color palette for routes
+        const colors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#27ae60',
+            '#2980b9', '#8e44ad', '#d35400', '#c0392b', '#7f8c8d',
+            '#95a5a6', '#bdc3c7', '#f1c40f', '#e84393', '#6c5ce7'
+        ];
+
+        const routeLayers = {};
+        const stopLayers = {};
+        let allLignes = [];
+        let selectedRoute = null;
+
+        // Reset view
+        function resetView() {
+            selectedRoute = null;
+            document.getElementById('route-filter').value = '';
+            document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('active'));
+            showAllRoutes();
+        }
+
+        // Show all routes
+        function showAllRoutes() {
+            Object.values(routeLayers).forEach(layer => {
+                if (layer) map.addLayer(layer);
+            });
+            Object.values(stopLayers).forEach(layer => {
+                if (layer) map.addLayer(layer);
+            });
+            map.setView([33.9716, -6.8498], 12);
+        }
+
+        // Show single route
+        function showRoute(ligneId) {
+            selectedRoute = ligneId;
+            Object.entries(routeLayers).forEach(([id, layer]) => {
+                if (layer) {
+                    if (id === ligneId) {
+                        map.addLayer(layer);
+                    } else {
+                        map.removeLayer(layer);
+                    }
+                }
+            });
+            Object.entries(stopLayers).forEach(([id, layer]) => {
+                if (layer) {
+                    if (id === ligneId) {
+                        map.addLayer(layer);
+                    } else {
+                        map.removeLayer(layer);
+                    }
+                }
+            });
+            if (routeLayers[ligneId]) {
+                try {
+                    map.fitBounds(routeLayers[ligneId].getBounds(), { padding: [50, 50] });
+                } catch(e) {}
+            }
+        }
+
+        // Fetch and display all bus lines
+        async function loadBusRoutes() {
+            try {
+                const response = await fetch('http://localhost:8081/api/lignes');
+                const lignes = await response.json();
+                allLignes = lignes;
+
+                document.getElementById('loading').classList.add('hidden');
+
+                if (!lignes || lignes.length === 0) {
+                    document.getElementById('legend-items').innerHTML = 
+                        '<p style="color: #999; font-size: 12px;">No routes available. Import data first.</p>';
+                    return;
+                }
+
+                // Populate filter dropdown
+                const filterSelect = document.getElementById('route-filter');
+                lignes.forEach(ligne => {
+                    const option = document.createElement('option');
+                    option.value = ligne.id;
+                    option.textContent = `${ligne.code} - ${ligne.nom}`;
+                    filterSelect.appendChild(option);
+                });
+
+                filterSelect.addEventListener('change', (e) => {
+                    const ligneId = e.target.value;
+                    document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('active'));
+                    if (ligneId) {
+                        showRoute(ligneId);
+                        document.querySelector(`.legend-item[data-ligne-id="${ligneId}"]`)?.classList.add('active');
+                    } else {
+                        showAllRoutes();
+                    }
+                });
+
+                const legendItems = document.getElementById('legend-items');
+                legendItems.innerHTML = '';
+
+                lignes.forEach((ligne, index) => {
+                    const color = colors[index % colors.length];
+
+                    // Draw route geometry if available
+                    if (ligne.routeGeometry) {
+                        try {
+                            const geoJson = JSON.parse(ligne.routeGeometry);
+                            const layer = L.geoJSON(geoJson, {
+                                style: {
+                                    color: color,
+                                    weight: 5,
+                                    opacity: 0.7,
+                                    lineJoin: 'round',
+                                    lineCap: 'round'
+                                }
+                            }).bindPopup(`<strong>${ligne.code}</strong><br>${ligne.nom}`);
+                            
+                            layer.addTo(map);
+                            routeLayers[ligne.id] = layer;
+                        } catch (e) {
+                            console.warn(`Failed to parse geometry for ${ligne.code}:`, e);
+                        }
+                    }
+
+                    // Add to legend
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.setAttribute('data-ligne-id', ligne.id);
+                    item.innerHTML = `
+                        <div class="legend-line" style="background: ${color}"></div>
+                        <span class="legend-text" title="${ligne.code} - ${ligne.nom}">${ligne.code} - ${ligne.nom.substring(0, 18)}${ligne.nom.length > 18 ? '...' : ''}</span>
+                    `;
+                    
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        document.getElementById('route-filter').value = ligne.id;
+                        showRoute(ligne.id);
+                    });
+
+                    legendItems.appendChild(item);
+
+                    // Fetch stops for this line
+                    loadStopsForLine(ligne.id, color);
+                });
+
+            } catch (error) {
+                console.error('Error loading routes:', error);
+                document.getElementById('loading').innerHTML = 'Error loading routes';
+            }
+        }
+
+        // Load stops for a specific line
+        async function loadStopsForLine(ligneId, color) {
+            try {
+                const response = await fetch(`http://localhost:8081/api/lignes/${ligneId}/arrets`);
+                const arrets = await response.json();
+
+                const layerGroup = L.layerGroup();
+
+                arrets.forEach(arret => {
+                    if (arret.latitude && arret.longitude) {
+                        const marker = L.circleMarker([arret.latitude, arret.longitude], {
+                            radius: 5,
+                            fillColor: color,
+                            color: '#fff',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        }).bindPopup(`
+                            <strong>${arret.nom}</strong><br>
+                            ${arret.address || 'No address'}
+                        `);
+
+                        marker.addTo(layerGroup);
+                    }
+                });
+
+                layerGroup.addTo(map);
+                stopLayers[ligneId] = layerGroup;
+            } catch (error) {
+                console.warn(`Could not load stops for line ${ligneId}:`, error);
+            }
+        }
+
+        // Load routes on page load
+        loadBusRoutes();
+    </script>
+</body>
+</html>
