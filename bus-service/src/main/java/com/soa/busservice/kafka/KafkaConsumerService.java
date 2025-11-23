@@ -1,9 +1,14 @@
 package com.soa.busservice.kafka;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soa.busservice.event.RouteCreatedEvent;
 import com.soa.busservice.model.Bus;
 import com.soa.busservice.model.Status;
 import com.soa.busservice.service.BusService;
+import com.soa.busservice.simulation.BusMovementSimulator;
+import com.soa.busservice.simulation.RouteGeometryCache;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -21,65 +26,68 @@ import java.util.UUID;
 public class KafkaConsumerService {
 
     private final BusService busService;
+    private final ObjectMapper objectMapper;
+    private final RouteGeometryCache routeCache;
+    private final BusMovementSimulator simulator; // Inject ObjectMapper for JSON parsing
 
+    // Listener for general line changes (updates/deletes)
+    // Updated to accept String and parse manually to avoid conversion errors
     @KafkaListener(topics = "line.changes", groupId = "bus-service-group")
-    public void consumeLineChange(Map<String, Object> message) {
+    public void consumeLineChange(String message) {
         try {
-            String changeType = (String) message.get("changeType");
-            String lineCode = (String) message.get("lineCode");
-            String lineName = (String) message.get("lineName");
+            log.info("Received line change payload: {}", message);
             
-            log.info("Received line change event: {} for line {} ({})", changeType, lineCode, lineName);
+            // Manually parse JSON String to Map
+            Map<String, Object> payload = objectMapper.readValue(message, new TypeReference<Map<String, Object>>() {});
             
-            switch (changeType) {
-                case "DELETED":
-                    log.warn("Line {} has been deleted. Buses on this line should be reassigned.", lineCode);
-                    // TODO: Alert system or mark buses on this line for review
-                    break;
-                case "UPDATED":
-                    log.info("Line {} has been updated. Bus assignments may need review.", lineCode);
-                    // TODO: Check if lineCode changed and update buses accordingly
-                    break;
-                case "CREATED":
-                    log.info("New line {} created and available for bus assignment.", lineCode);
-                    break;
-                default:
-                    log.warn("Unknown change type: {}", changeType);
+            String changeType = (String) payload.get("changeType");
+            String lineCode = (String) payload.get("lineCode");
+            
+            log.info("Processed line change event: {} for line {}", changeType, lineCode);
+            
+            if ("DELETED".equals(changeType)) {
+                log.warn("Line {} deleted. Buses may need reassignment.", lineCode);
             }
-            
         } catch (Exception e) {
-            log.error("Error processing line change event", e);
+            log.error("Error processing line change event: {}", message, e);
         }
     }
 
-    @KafkaListener(topics = "route-created", groupId = "bus-service-group")
-    public void consumeRouteCreatedEvent(RouteCreatedEvent event) {
-        log.info("Received RouteCreatedEvent: {}", event);
+    // Listener that creates buses when a new route appears
+    // Updated to accept String and parse manually
+@KafkaListener(topics = "route-created", groupId = "bus-service-group")
+    public void consumeRouteCreatedEvent(String payload) {
+        try {
+            RouteCreatedEvent event = objectMapper.readValue(payload, RouteCreatedEvent.class);
+            log.info("New Route: {}", event.getRouteName());
 
-        // Generate random buses for the route
-        Random random = new Random();
-        int numberOfBuses = random.nextInt(4) + 2; // Create 2 to 5 buses per route
-        List<Bus> buses = new ArrayList<>();
+            // 1. Cache Geometry
+            routeCache.cacheRoute(event.getRouteName(), event.getGeometry());
 
-        for (int i = 0; i < numberOfBuses; i++) {
-            Bus bus = new Bus();
-            bus.setId(UUID.randomUUID());
-            bus.setBusNumber("Bus-" + UUID.randomUUID().toString().substring(0, 8));
-            bus.setLineCode(event.getRouteName());
-            bus.setCapacity(random.nextInt(50) + 20); // Capacity between 20 and 70
-            bus.setStatus(Status.ACTIVE);
+            // 2. Create Buses
+            Random rand = new Random();
+            int count = rand.nextInt(3) + 2; // 2-4 buses
 
-            // Randomize initial geolocation
-            bus.setLatitude(40.0 + random.nextDouble());
-            bus.setLongitude(-74.0 + random.nextDouble());
-            bus.setSpeed(random.nextDouble() * 50); // Speed between 0 and 50 km/h
-            bus.setHeading(random.nextDouble() * 360); // Heading in degrees
+            for (int i = 0; i < count; i++) {
+                Bus bus = new Bus();
+                bus.setBusNumber("BUS-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase());
+                bus.setLineCode(event.getRouteName());
+                bus.setCapacity(50);
+                bus.setStatus(Status.ACTIVE);
+                
+                // Initialize position (Start of route or default)
+                List<double[]> path = routeCache.getPath(event.getRouteName());
+                double[] start = (path != null && !path.isEmpty()) ? path.get(0) : new double[]{34.0, -6.8};
+                bus.setLatitude(start[0]);
+                bus.setLongitude(start[1]);
 
-            buses.add(bus);
+                // Persist & Activate Simulation
+                busService.saveBusWithRetry(bus);
+                simulator.addBus(bus);
+            }
+            log.info("Deployed {} buses on route {}", count, event.getRouteName());
+
+        } catch (Exception e) {
+            log.error("Failed to process route event: {}", e.getMessage());
         }
-
-        // Save buses to the database using the retry mechanism
-        buses.forEach(busService::saveBusWithRetry);
-        log.info("Created {} buses for route: {}", numberOfBuses, event.getRouteName());
-    }
-}
+    }}

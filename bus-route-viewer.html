@@ -1,426 +1,465 @@
-<!-- src/main/resources/static/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bus Routes - Rabat Salé Témara</title>
+    <title>UrbanMove Live Operations Center</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --sidebar-width: 350px;
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --text-light: #ecf0f1;
+            --bg-dark: #1a1a1a;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            overflow: hidden;
-        }
-        #map {
-            width: 100vw;
-            height: 100vh;
-        }
-        .controls {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 1000;
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: var(--bg-dark); }
+
+        /* Layout */
+        .dashboard-container { display: flex; height: 100vh; width: 100vw; }
+        #map { flex: 1; height: 100%; z-index: 1; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: var(--text-light);
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .brand { font-size: 1.4rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .brand i { color: var(--accent); }
+
+        .connection-status {
+            font-size: 0.8rem;
+            margin-top: 8px;
+            display: flex;
             align-items: center;
+            gap: 6px;
         }
-        .controls select {
-            padding: 6px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
-            min-width: 200px;
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); transition: background 0.3s; }
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .controls button {
-            padding: 6px 16px;
-            background: #007bff;
-            color: white;
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .stat-label { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; }
+
+        /* Controls */
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
+        
+        .control-panel { display: flex; gap: 5px; margin-bottom: 20px; }
+        .btn {
+            flex: 1;
+            padding: 8px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-light);
         }
-        .controls button:hover {
-            background: #0056b3;
+        .btn:hover { background: rgba(255,255,255,0.2); }
+        .btn.active { background: var(--accent); color: white; }
+        
+        .filter-info {
+            background: rgba(241, 196, 15, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .legend {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            max-height: 60vh;
+        .filter-info button {
+            background: none; border: none; color: inherit; cursor: pointer; font-weight: bold;
+        }
+
+        /* Lists */
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin: 20px 0 10px 0;
+        }
+        .bus-list, .line-list { display: flex; flex-direction: column; gap: 5px; }
+        
+        .list-item {
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .list-item:hover { background: rgba(255,255,255,0.08); }
+        .list-item.active { background: rgba(52, 152, 219, 0.15); border-left-color: var(--accent); }
+
+        .item-main { font-weight: 600; font-size: 0.9rem; }
+        .item-sub { font-size: 0.75rem; opacity: 0.7; }
+        .item-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; background: rgba(255,255,255,0.1); }
+
+        /* Log Feed */
+        .log-feed {
+            height: 150px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.1);
             overflow-y: auto;
-            z-index: 1000;
-            max-width: 280px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
         }
-        .legend h3 {
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #333;
-        }
-        .legend-item {
+        .log-entry { margin-bottom: 4px; display: flex; gap: 8px; }
+        .log-time { color: var(--accent); min-width: 60px; }
+        .log-msg { opacity: 0.8; }
+
+        /* Map Markers */
+        .bus-marker-icon {
+            background: var(--accent);
+            border: 2px solid white;
+            color: white;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            margin: 6px 0;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            transition: all 0.3s;
         }
-        .legend-item:hover {
-            background: #f0f0f0;
-        }
-        .legend-item.active {
-            background: #e3f2fd;
-            font-weight: 600;
-        }
-        .legend-line {
-            width: 30px;
-            height: 4px;
-            margin-right: 8px;
-            border-radius: 2px;
-            flex-shrink: 0;
-        }
-        .legend-text {
-            font-size: 12px;
-            color: #555;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .direction-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-left: 4px;
-            background: #f0f0f0;
-            color: #666;
-        }
-        .loading {
-            position: absolute;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 1000;
-            font-size: 14px;
-            color: #333;
-        }
-        .hidden {
-            display: none;
-        }
-        .stats {
-            font-size: 11px;
-            color: #999;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
+        .bus-popup { font-size: 0.9rem; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="controls">
-        <select id="line-filter">
-            <option value="">All Lines</option>
-        </select>
-        <button onclick="resetView()">Reset View</button>
-        <button onclick="loadRoutes()">Refresh</button>
-    </div>
-    <div id="loading" class="loading">Loading bus routes...</div>
-    <div class="legend">
-        <h3>🚌 Bus Lines</h3>
-        <div id="legend-items"></div>
-        <div id="stats" class="stats"></div>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fas fa-bus-alt"></i>
+                    <span>URBAN MOVE</span>
+                </div>
+                <div class="connection-status">
+                    <div id="status-dot" class="status-dot"></div>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-buses">0</div>
+                    <div class="stat-label">Active Buses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-speed">0</div>
+                    <div class="stat-label">Avg Speed</div>
+                </div>
+            </div>
+
+            <div class="sidebar-content">
+                <div class="control-panel">
+                    <button class="btn active" id="btn-routes" onclick="toggleLayer('routes')">Routes</button>
+                    <button class="btn active" id="btn-stops" onclick="toggleLayer('stops')">Stops</button>
+                    <button class="btn" onclick="fitMap()">Fit Map</button>
+                </div>
+
+                <div id="active-filter" class="filter-info hidden">
+                    <span>Filtering by: <b id="filter-name">Line 32H</b></span>
+                    <button onclick="resetFilter()"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="section-title">Network Lines</div>
+                <div id="line-list" class="line-list"></div>
+
+                <div class="section-title">Live Buses</div>
+                <div id="bus-list" class="bus-list">
+                    <div class="list-item" style="justify-content:center; opacity:0.5;">Waiting for data...</div>
+                </div>
+            </div>
+
+            <div class="log-feed" id="log-feed"></div>
+        </div>
+
+        <div id="map"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize map centered on Rabat
-        const map = L.map('map').setView([33.9716, -6.8498], 12);
+        const CONFIG = {
+            trajetUrl: 'http://localhost:8081/api',
+            wsUrl: 'ws://localhost:8080/ws/gps-tracking',
+            center: [33.9716, -6.8498],
+            zoom: 12
+        };
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 18
-        }).addTo(map);
+        const state = {
+            map: null,
+            layers: { routes: L.layerGroup(), stops: L.layerGroup(), buses: L.layerGroup() },
+            buses: {}, 
+            filter: null, // Current Line Reference (e.g., "32H")
+            stats: { totalSpeed: 0, count: 0 }
+        };
 
-        // Color palette
-        const colors = [
-            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
-            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#27ae60',
-            '#2980b9', '#8e44ad', '#d35400', '#c0392b', '#7f8c8d',
-            '#95a5a6', '#bdc3c7', '#f1c40f', '#e84393', '#6c5ce7'
-        ];
-
-        const routeLayers = {};
-        const stopLayers = {};
-        let allLines = [];
-        let selectedLine = null;
-
-        // Reset view
-        function resetView() {
-            selectedLine = null;
-            document.getElementById('line-filter').value = '';
-            document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('active'));
-            showAllRoutes();
+        function initMap() {
+            state.map = L.map('map').setView(CONFIG.center, CONFIG.zoom);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '©OpenStreetMap, ©CartoDB'
+            }).addTo(state.map);
+            
+            Object.values(state.layers).forEach(l => l.addTo(state.map));
         }
 
-        // Show all routes
-        function showAllRoutes() {
-            Object.values(routeLayers).forEach(layer => {
-                if (layer) map.addLayer(layer);
-            });
-            Object.values(stopLayers).forEach(layer => {
-                if (layer) map.addLayer(layer);
-            });
-            
-            // Fit to all routes
-            const allLayersArray = Object.values(routeLayers).filter(l => l);
-            if (allLayersArray.length > 0) {
-                const group = L.featureGroup(allLayersArray);
-                map.fitBounds(group.getBounds(), { padding: [50, 50] });
-            } else {
-                map.setView([33.9716, -6.8498], 12);
-            }
+        function log(msg) {
+            const feed = document.getElementById('log-feed');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `<div class="log-time">${new Date().toLocaleTimeString().split(' ')[0]}</div><div class="log-msg">${msg}</div>`;
+            feed.insertBefore(div, feed.firstChild);
+            if(feed.children.length > 50) feed.removeChild(feed.lastChild);
         }
 
-        // Show single line
-        function showLine(lineRef) {
-            selectedLine = lineRef;
-            
-            Object.entries(routeLayers).forEach(([key, layer]) => {
-                if (layer) {
-                    // key format: "lineRef-routeId"
-                    const [ref, routeId] = key.split('-');
-                    if (ref === lineRef) {
-                        map.addLayer(layer);
-                    } else {
-                        map.removeLayer(layer);
-                    }
-                }
-            });
-            
-            Object.entries(stopLayers).forEach(([key, layer]) => {
-                if (layer) {
-                    const [ref, routeId] = key.split('-');
-                    if (ref === lineRef) {
-                        map.addLayer(layer);
-                    } else {
-                        map.removeLayer(layer);
-                    }
-                }
-            });
-            
-            // Fit to selected line routes
-            const lineLayers = Object.entries(routeLayers)
-                .filter(([key, layer]) => key.startsWith(lineRef + '-') && layer)
-                .map(([key, layer]) => layer);
-            
-            if (lineLayers.length > 0) {
-                try {
-                    const group = L.featureGroup(lineLayers);
-                    map.fitBounds(group.getBounds(), { padding: [50, 50] });
-                } catch(e) {
-                    console.warn('Could not fit bounds:', e);
-                }
-            }
-        }
-
-        // Fetch and display all bus lines
-        async function loadRoutes() {
+        // --- DATA LOADING ---
+        async function loadNetwork() {
             try {
-                document.getElementById('loading').classList.remove('hidden');
-                
-                const response = await fetch('http://localhost:8081/api/lines');
-                const lines = await response.json();
-                allLines = lines;
+                const res = await fetch(`${CONFIG.trajetUrl}/lines`);
+                const lines = await res.json();
+                const list = document.getElementById('line-list');
+                list.innerHTML = '';
 
-                document.getElementById('loading').classList.add('hidden');
+                for (const line of lines) {
+                    // Add to UI
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.dataset.ref = line.ref; // Store Ref for filtering
+                    item.innerHTML = `<div><span class="item-main">${line.ref}</span> <span class="item-sub">${line.name}</span></div>`;
+                    item.onclick = () => applyFilter(line.ref);
+                    list.appendChild(item);
 
-                if (!lines || lines.length === 0) {
-                    document.getElementById('legend-items').innerHTML = 
-                        '<p style="color: #999; font-size: 12px;">No routes available. Run importer first.</p>';
-                    return;
-                }
+                    // Load Routes & Stops
+                    const routesRes = await fetch(`${CONFIG.trajetUrl}/lines/${line.ref}/routes`);
+                    const routes = await routesRes.json();
+                    const color = getColor(line.ref);
 
-                // Clear existing layers
-                Object.values(routeLayers).forEach(layer => map.removeLayer(layer));
-                Object.values(stopLayers).forEach(layer => map.removeLayer(layer));
-                Object.keys(routeLayers).forEach(key => delete routeLayers[key]);
-                Object.keys(stopLayers).forEach(key => delete stopLayers[key]);
-
-                // Populate filter dropdown
-                const filterSelect = document.getElementById('line-filter');
-                filterSelect.innerHTML = '<option value="">All Lines</option>';
-                
-                lines.forEach(line => {
-                    const option = document.createElement('option');
-                    option.value = line.ref;
-                    option.textContent = `${line.ref} - ${line.name}`;
-                    filterSelect.appendChild(option);
-                });
-
-                filterSelect.addEventListener('change', (e) => {
-                    const lineRef = e.target.value;
-                    document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('active'));
-                    if (lineRef) {
-                        showLine(lineRef);
-                        document.querySelector(`.legend-item[data-line-ref="${lineRef}"]`)?.classList.add('active');
-                    } else {
-                        showAllRoutes();
-                    }
-                });
-
-                const legendItems = document.getElementById('legend-items');
-                legendItems.innerHTML = '';
-
-                let totalRoutes = 0;
-                let totalStops = 0;
-
-                // Load each line with its routes
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    const color = colors[i % colors.length];
-
-                    try {
-                        // Fetch routes for this line
-                        const routesResponse = await fetch(`http://localhost:8081/api/lines/${line.ref}/routes`);
-                        const routes = await routesResponse.json();
-
-                        if (!routes || routes.length === 0) {
-                            console.warn(`No routes found for line ${line.ref}`);
-                            continue;
+                    routes.forEach(route => {
+                        if (route.geometry) {
+                            const poly = L.geoJSON(JSON.parse(route.geometry), {
+                                style: { color: color, weight: 3, opacity: 0.5 }
+                            }).bindPopup(`Line ${line.ref}: ${route.name}`);
+                            
+                            poly.lineRef = line.ref; // TAG FOR FILTERING
+                            poly.addTo(state.layers.routes);
                         }
 
-                        totalRoutes += routes.length;
-
-                        // Display each route
-                        for (const route of routes) {
-                            if (route.geometry) {
-                                try {
-                                    const geoJson = JSON.parse(route.geometry);
-                                    
-                                    const layer = L.geoJSON(geoJson, {
-                                        style: {
-                                            color: color,
-                                            weight: 5,
-                                            opacity: 0.7,
-                                            lineJoin: 'round',
-                                            lineCap: 'round'
-                                        }
-                                    }).bindPopup(`
-                                        <strong>${line.ref}</strong><br>
-                                        ${route.name}<br>
-                                        <small>${route.direction}</small>
-                                    `);
-                                    
-                                    layer.addTo(map);
-                                    routeLayers[`${line.ref}-${route.id}`] = layer;
-                                } catch (e) {
-                                    console.warn(`Failed to parse geometry for route ${route.id}:`, e);
-                                }
-                            }
-
-                            // Load stops for this route
-                            try {
-                                const stopsResponse = await fetch(`http://localhost:8081/api/routes/${route.id}/stops`);
-                                const stops = await stopsResponse.json();
+                        fetch(`${CONFIG.trajetUrl}/routes/${route.id}/stops`).then(r => r.json()).then(stops => {
+                            stops.forEach(stop => {
+                                const marker = L.circleMarker([stop.latitude, stop.longitude], {
+                                    radius: 2, color: color, fillColor: '#fff', fillOpacity: 1
+                                }).bindPopup(`<b>${stop.name}</b><br>Line ${line.ref}`);
                                 
-                                if (stops && stops.length > 0) {
-                                    totalStops += stops.length;
-                                    
-                                    const stopLayerGroup = L.layerGroup();
-                                    
-                                    stops.forEach(stop => {
-                                        if (stop.latitude && stop.longitude) {
-                                            const marker = L.circleMarker([stop.latitude, stop.longitude], {
-                                                radius: 5,
-                                                fillColor: color,
-                                                color: '#fff',
-                                                weight: 2,
-                                                opacity: 1,
-                                                fillOpacity: 0.9
-                                            }).bindPopup(`
-                                                <strong>${stop.name}</strong><br>
-                                                Order: ${stop.order}<br>
-                                                ${stop.address || ''}
-                                            `);
-                                            
-                                            marker.addTo(stopLayerGroup);
-                                        }
-                                    });
-                                    
-                                    stopLayerGroup.addTo(map);
-                                    stopLayers[`${line.ref}-${route.id}`] = stopLayerGroup;
-                                }
-                            } catch (e) {
-                                console.warn(`Could not load stops for route ${route.id}:`, e);
-                            }
-                        }
-
-                        // Add to legend (one item per line)
-                        const item = document.createElement('div');
-                        item.className = 'legend-item';
-                        item.setAttribute('data-line-ref', line.ref);
-                        item.innerHTML = `
-                            <div class="legend-line" style="background: ${color}"></div>
-                            <span class="legend-text" title="${line.ref} - ${line.name}">
-                                ${line.ref} - ${line.name.substring(0, 18)}${line.name.length > 18 ? '...' : ''}
-                                <span class="direction-badge">${routes.length} route(s)</span>
-                            </span>
-                        `;
-                        
-                        item.addEventListener('click', () => {
-                            document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
-                            item.classList.add('active');
-                            document.getElementById('line-filter').value = line.ref;
-                            showLine(line.ref);
+                                marker.lineRef = line.ref; // TAG FOR FILTERING
+                                marker.addTo(state.layers.stops);
+                            });
                         });
+                    });
+                }
+                log(`Loaded network: ${lines.length} lines`);
+            } catch (e) { log("Error loading network: " + e.message); }
+        }
 
-                        legendItems.appendChild(item);
+        // --- WEBSOCKET ---
+        function connectWs() {
+            const ws = new WebSocket(CONFIG.wsUrl);
+            ws.onopen = () => {
+                document.getElementById('status-dot').classList.add('connected');
+                document.getElementById('status-text').innerText = 'Connected';
+                log("Real-time stream active");
+            };
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                if(msg.type === 'GPS_UPDATE') updateBus(msg.payload);
+            };
+            ws.onclose = () => setTimeout(connectWs, 5000);
+        }
 
-                    } catch (error) {
-                        console.error(`Error loading routes for line ${line.ref}:`, error);
-                    }
+        function updateBus(data) {
+            const { busId, busMatricule, latitude, longitude, speed, lineNumber } = data;
+            const color = getColor(lineNumber);
+
+            // Update Stats
+            state.stats.totalSpeed += speed;
+            state.stats.count++;
+            if(state.stats.count > 50) { state.stats.totalSpeed = speed; state.stats.count = 1; }
+            document.getElementById('stat-speed').innerText = (state.stats.totalSpeed / state.stats.count).toFixed(1);
+
+            // Create or Update Marker
+            if (!state.buses[busId]) {
+                const icon = L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div class="bus-marker-icon" style="background:${color}"><i class="fas fa-bus"></i></div>`,
+                    iconSize: [24, 24]
+                });
+                
+                const marker = L.marker([latitude, longitude], { icon })
+                    .bindPopup(`<b>${busMatricule}</b><br>Line: ${lineNumber}<br>Speed: ${speed.toFixed(1)} km/h`);
+                
+                marker.lineRef = lineNumber; // TAG FOR FILTERING
+                
+                // Only add to map if filter matches or no filter
+                if (!state.filter || state.filter === lineNumber) {
+                    marker.addTo(state.layers.buses);
                 }
 
-                // Update stats
-                document.getElementById('stats').innerHTML = `
-                    <div><strong>Lines:</strong> ${lines.length}</div>
-                    <div><strong>Routes:</strong> ${totalRoutes}</div>
-                    <div><strong>Stops:</strong> ${totalStops}</div>
+                // Add to Sidebar
+                const el = document.createElement('div');
+                el.id = `bus-${busId}`;
+                el.className = 'list-item';
+                el.dataset.lineRef = lineNumber; // TAG FOR CSS FILTERING
+                el.innerHTML = `
+                    <div><div class="item-main">${busMatricule}</div><div class="item-sub">Line ${lineNumber}</div></div>
+                    <div class="item-badge">${speed.toFixed(0)} km/h</div>
                 `;
+                el.onclick = () => {
+                    state.map.flyTo([latitude, longitude], 16);
+                    marker.openPopup();
+                };
+                document.getElementById('bus-list').appendChild(el);
 
-                // Fit map to all routes
-                showAllRoutes();
-
-            } catch (error) {
-                console.error('Error loading routes:', error);
-                document.getElementById('loading').innerHTML = 'Error loading routes';
+                state.buses[busId] = { marker, el };
+                document.getElementById('stat-buses').innerText = Object.keys(state.buses).length;
+            } else {
+                const bus = state.buses[busId];
+                bus.marker.setLatLng([latitude, longitude]);
+                bus.marker.getPopup().setContent(`<b>${busMatricule}</b><br>Line: ${lineNumber}<br>Speed: ${speed.toFixed(1)} km/h`);
+                
+                // Verify visibility against filter
+                if (state.filter && state.filter !== lineNumber) {
+                    if(state.map.hasLayer(bus.marker)) state.map.removeLayer(bus.marker);
+                } else {
+                    if(!state.map.hasLayer(bus.marker)) bus.marker.addTo(state.layers.buses);
+                }
             }
         }
 
-        // Load routes on page load
-        window.addEventListener('load', () => {
-            loadRoutes();
-        });
+        // --- FILTERING LOGIC ---
+        function applyFilter(ref) {
+            state.filter = ref;
+            document.getElementById('active-filter').classList.remove('hidden');
+            document.getElementById('filter-name').innerText = "Line " + ref;
+
+            // Update Sidebar UI
+            document.querySelectorAll('.line-list .list-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.ref === ref);
+            });
+
+            // Filter Buses (Sidebar)
+            document.querySelectorAll('#bus-list .list-item').forEach(el => {
+                el.style.display = (el.dataset.lineRef === ref) ? 'flex' : 'none';
+            });
+
+            // Filter Map Layers
+            state.layers.routes.eachLayer(l => {
+                if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
+            });
+            state.layers.stops.eachLayer(l => {
+                if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
+            });
+            
+            // Filter Buses (Map)
+            Object.values(state.buses).forEach(bus => {
+                if (bus.marker.lineRef === ref) bus.marker.addTo(state.map);
+                else state.map.removeLayer(bus.marker);
+            });
+
+            fitMap();
+            log(`Filtered view: Line ${ref}`);
+        }
+
+        function resetFilter() {
+            state.filter = null;
+            document.getElementById('active-filter').classList.add('hidden');
+            document.querySelectorAll('.list-item').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'flex'; // Show all buses
+            });
+
+            // Show All Layers
+            state.layers.routes.eachLayer(l => l.addTo(state.map));
+            state.layers.stops.eachLayer(l => l.addTo(state.map));
+            Object.values(state.buses).forEach(bus => bus.marker.addTo(state.map));
+            
+            fitMap();
+            log("Filter reset - Showing all network");
+        }
+
+        // --- UTILS ---
+        function getColor(str) {
+            let hash = 0; 
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + '00000'.substring(0, 6 - c.length) + c;
+        }
+
+        function toggleLayer(name) {
+            const layer = state.layers[name];
+            const btn = document.getElementById(`btn-${name}`);
+            if (state.map.hasLayer(layer)) {
+                state.map.removeLayer(layer);
+                btn.classList.remove('active');
+            } else {
+                state.map.addLayer(layer);
+                btn.classList.add('active');
+            }
+        }
+
+        function fitMap() {
+            // Fit to visible routes
+            const group = new L.featureGroup();
+            state.layers.routes.eachLayer(l => { if(state.map.hasLayer(l)) group.addLayer(l); });
+            if (Object.keys(group._layers).length > 0) state.map.fitBounds(group.getBounds());
+            else state.map.setView(CONFIG.center, CONFIG.zoom);
+        }
+
+        // Start
+        initMap();
+        loadNetwork();
+        connectWs();
     </script>
 </body>
 </html>
