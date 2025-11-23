@@ -10,7 +10,7 @@ import UserSettings from './UserSettings'
 import AdminDashboard from './AdminDashboard'
 
 const UserDashboard = () => {
-  const { user, logout, isTestMode } = useAuth()
+  const { user, logout } = useAuth()
   const [activeView, setActiveView] = useState('profile')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -173,4 +173,3 @@ const UserDashboard = () => {
 }
 
 export default UserDashboard
-

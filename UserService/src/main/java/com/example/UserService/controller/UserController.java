@@ -1,5 +1,6 @@
 package com.example.UserService.controller;
 
+import com.example.UserService.dto.ChangePasswordRequest;
 import com.example.UserService.dto.UpdateUserRequest;
 import com.example.UserService.dto.UserResponse;
 import com.example.UserService.model.User;
@@ -67,5 +68,13 @@ public class UserController {
     ) {
         UserResponse updatedUser = userService.updateUserRole(id, role);
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        userService.changePassword(email, request);
+        return ResponseEntity.ok().build();
     }
 }

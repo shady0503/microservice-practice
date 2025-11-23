@@ -1,16 +1,8 @@
-import { useAuth } from '@/contexts/AuthContext'
-import AuthPage from '@/components/auth/AuthPage'
 import UserDashboard from '@/components/user/UserDashboard'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const UserService = ({ onBack }) => {
-  const { isAuthenticated } = useAuth()
-
-  if (!isAuthenticated) {
-    return <AuthPage onBack={onBack} />
-  }
-
   return (
     <div className="min-h-screen relative">
       {onBack && (
@@ -31,4 +23,3 @@ const UserService = ({ onBack }) => {
 }
 
 export default UserService
-

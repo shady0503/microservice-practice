@@ -84,7 +84,27 @@ services:
       timeout: 5s
       retries: 5
 
-  # Bus Service (Geolocation Service)
+  # PostgreSQL for User Service
+  postgres-user:
+    image: postgres:15-alpine
+    container_name: postgres-user
+    environment:
+      POSTGRES_DB: urbanmove_users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Bus Service
   bus-service:
     build:
       context: ./bus-service
@@ -106,7 +126,7 @@ services:
       - urbanmove-network
     restart: unless-stopped
 
-  # Trajet Service (Routes & Schedules Service)
+  # Trajet Service
   trajet-service:
     build:
       context: ./trajet-service
@@ -118,7 +138,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "8082:8081" # Remapped to 8082 to avoid conflict with user-service
     environment:
       DB_HOST: postgres-trajet
       DB_PORT: 5432
@@ -127,7 +147,30 @@ services:
       DB_PASS: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SERVER_PORT: 8081
-      JAVA_OPTS: "-Xmx1024m -Xms512m"
+    networks:
+      - urbanmove-network
+    restart: unless-stopped
+
+  # User Service
+  user-service:
+    build:
+      context: ./UserService
+      dockerfile: Dockerfile
+    container_name: user-service
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres-user
+      DB_PORT: 5432
+      DB_NAME: urbanmove_users_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - urbanmove-network
     restart: unless-stopped
@@ -139,3 +182,4 @@ networks:
 volumes:
   postgres-bus-data:
   postgres-trajet-data:
+  postgres-user-data:

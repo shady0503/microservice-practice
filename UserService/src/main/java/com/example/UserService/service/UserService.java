@@ -1,8 +1,10 @@
 package com.example.UserService.service;
 
 import com.example.UserService.dto.*;
+import com.example.UserService.event.UserEvent;
 import com.example.UserService.exception.EmailAlreadyExistsException;
 import com.example.UserService.exception.UserNotFoundException;
+import com.example.UserService.kafka.UserProducer;
 import com.example.UserService.model.User;
 import com.example.UserService.repository.UserRepository;
 import com.example.UserService.security.JwtService;
@@ -10,6 +12,7 @@ import com.example.UserService.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,11 +32,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final UserProducer userProducer;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        log.info("Tentative d'inscription pour l'email: {}", request.getEmail());
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Un utilisateur avec cet email existe déjà");
         }
@@ -49,7 +51,10 @@ public class UserService {
         user.setEmailVerified(false);
 
         User savedUser = userRepository.save(user);
-        log.info("Utilisateur créé avec succès: {}", savedUser.getEmail());
+        
+        userProducer.publishUserEvent(new UserEvent(
+            savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name(), "CREATED"
+        ));
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User
                 .withUsername(savedUser.getEmail())
@@ -70,13 +75,8 @@ public class UserService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        log.info("Tentative de connexion pour l'email: {}", request.getEmail());
-
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
         User user = userRepository.findByEmail(request.getEmail())
@@ -93,8 +93,6 @@ public class UserService {
 
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
-
-        log.info("Connexion réussie pour: {}", user.getEmail());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -130,19 +128,16 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé avec l'ID: " + id));
 
-        if (request.getFirstName() != null) {
-            user.setFirstName(request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            user.setLastName(request.getLastName());
-        }
-        if (request.getPhoneNumber() != null) {
-            user.setPhoneNumber(request.getPhoneNumber());
-        }
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
 
         User updatedUser = userRepository.save(user);
-        log.info("Utilisateur mis à jour: {}", updatedUser.getEmail());
-
+        
+        userProducer.publishUserEvent(new UserEvent(
+            updatedUser.getId(), updatedUser.getEmail(), updatedUser.getRole().name(), "UPDATED"
+        ));
+        
         return UserResponse.fromUser(updatedUser);
     }
 
@@ -153,7 +148,10 @@ public class UserService {
 
         user.setActive(false);
         userRepository.save(user);
-        log.info("Utilisateur désactivé: {}", user.getEmail());
+        
+        userProducer.publishUserEvent(new UserEvent(
+            user.getId(), user.getEmail(), user.getRole().name(), "DELETED"
+        ));
     }
 
     @Transactional
@@ -163,8 +161,28 @@ public class UserService {
 
         user.setRole(role);
         User updatedUser = userRepository.save(user);
-        log.info("Rôle de l'utilisateur {} mis à jour vers: {}", updatedUser.getEmail(), role);
+        
+        userProducer.publishUserEvent(new UserEvent(
+            updatedUser.getId(), updatedUser.getEmail(), updatedUser.getRole().name(), "UPDATED"
+        ));
 
         return UserResponse.fromUser(updatedUser);
+    }
+
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Mot de passe actuel incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        userProducer.publishUserEvent(new UserEvent(
+            user.getId(), user.getEmail(), user.getRole().name(), "UPDATED"
+        ));
     }
 }

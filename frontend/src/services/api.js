@@ -23,15 +23,33 @@ const fetchWithAuth = async (url, options = {}) => {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }))
-    throw new Error(error.message || `HTTP error! status: ${response.status}`)
+    // Try to parse the error response
+    const errorData = await response.json().catch(() => ({ message: 'An error occurred' }))
+    
+    // Handle Spring Boot Validation Errors (which return a Map<Field, Message>)
+    let errorMessage = errorData.message
+    
+    if (!errorMessage && typeof errorData === 'object') {
+      // If no 'message' field exists, assume it's a validation map and join values
+      // e.g. { "password": "too short", "email": "invalid format" }
+      const validationErrors = Object.values(errorData)
+      if (validationErrors.length > 0) {
+        errorMessage = validationErrors.join(', ')
+      }
+    }
+
+    throw new Error(errorMessage || `HTTP error! status: ${response.status}`)
   }
 
   if (response.status === 204) {
     return null
   }
 
-  return response.json()
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+    return JSON.parse(text);
 }
 
 // Authentication API
@@ -112,4 +130,3 @@ export const tokenManager = {
     localStorage.removeItem('refreshToken')
   },
 }
-
