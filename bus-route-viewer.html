@@ -21,17 +21,17 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: var(--bg-dark); }
 
-        .dashboard-container { display: flex; height: 100vh; width: 100vw; }
-        #map { flex: 1; height: 100%; z-index: 1; }
+        .dashboard-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        #map { flex: 1; height: 100%; z-index: 1; min-width: 0; }
 
         .sidebar {
-            width: var(--sidebar-width);
+            width: 350px;
             background: var(--primary);
             color: var(--text-light);
             display: flex;
             flex-direction: column;
             box-shadow: 4px 0 15px rgba(0,0,0,0.3);
-            z-index: 2;
+            z-index: 1000;
         }
 
         .sidebar-header {
@@ -239,7 +239,6 @@
                 attribution: '©OpenStreetMap, ©CartoDB'
             }).addTo(state.map);
             
-            // Add all layers initially
             Object.values(state.layers).forEach(l => l.addTo(state.map));
         }
 
@@ -265,16 +264,14 @@
                     item.className = 'list-item';
                     item.dataset.ref = line.ref;
                     item.innerHTML = `<div><span class="item-main">${line.ref}</span> <span class="item-sub">${line.name}</span></div>`;
-                    item.onclick = () => applyFilter(line.ref);
+                    item.onclick = () => focusLine(line.ref);
                     list.appendChild(item);
 
-                    // Load Routes
                     const routesRes = await fetch(`${CONFIG.trajetUrl}/lines/${line.ref}/routes`);
                     const routes = await routesRes.json();
                     const color = getColor(line.ref);
 
                     routes.forEach(route => {
-                        // Routes
                         if (route.geometry) {
                             const poly = L.geoJSON(JSON.parse(route.geometry), {
                                 style: { color: color, weight: 3, opacity: 0.5 }
@@ -283,7 +280,6 @@
                             poly.addTo(state.layers.routes);
                         }
 
-                        // Stops
                         fetch(`${CONFIG.trajetUrl}/lines/routes/${route.id}/stops`).then(r => r.json()).then(stops => {
                             stops.forEach(stop => {
                                 const marker = L.circleMarker([stop.latitude, stop.longitude], {
@@ -317,7 +313,14 @@
 
         function updateBus(data) {
             const { busId, busMatricule, latitude, longitude, speed, lineNumber } = data;
-            const color = getColor(lineNumber);
+            
+            // Extract line ref from route name (e.g., "L32H: Harhoura – Bab El Had" -> "32H")
+            let lineRef = lineNumber;
+            if (lineNumber && lineNumber.includes(':')) {
+                lineRef = lineNumber.split(':')[0].replace(/^L/, '').trim();
+            }
+            
+            const color = getColor(lineRef);
 
             state.stats.totalSpeed += speed;
             state.stats.count++;
@@ -332,28 +335,24 @@
                 });
                 
                 const marker = L.marker([latitude, longitude], { icon })
-                    .bindPopup(`<b>${busMatricule}</b><br>Line: ${lineNumber}<br>Speed: ${speed.toFixed(1)} km/h`);
+                    .bindPopup(`<b>${busMatricule}</b><br>Line: ${lineRef}<br>Speed: ${speed.toFixed(1)} km/h`);
                 
-                marker.lineRef = lineNumber;
+                marker.lineRef = lineRef;
                 
-                // Important: Check filter before adding
-                if (!state.filter || state.filter === lineNumber) {
+                if (!state.filter || state.filter === lineRef) {
                     marker.addTo(state.layers.buses);
                 }
 
-                // Add to List
                 const el = document.createElement('div');
                 el.id = `bus-${busId}`;
                 el.className = 'list-item';
-                el.dataset.lineRef = lineNumber;
+                el.dataset.lineRef = lineRef;
                 el.innerHTML = `
-                    <div><div class="item-main">${busMatricule}</div><div class="item-sub">Line ${lineNumber}</div></div>
+                    <div><div class="item-main">${busMatricule}</div><div class="item-sub">Line ${lineRef}</div></div>
                     <div class="item-badge">${speed.toFixed(0)} km/h</div>
                 `;
-                // Focus logic on bus click
-                el.onclick = () => focusBus(busId, lineNumber);
+                el.onclick = () => focusBus(busId, lineRef);
                 
-                // Remove "Waiting..." message
                 const list = document.getElementById('bus-list');
                 if (list.children[0] && list.children[0].innerText.includes('Waiting')) list.innerHTML = '';
                 
@@ -363,23 +362,57 @@
             } else {
                 const bus = state.buses[busId];
                 bus.marker.setLatLng([latitude, longitude]);
-                bus.marker.getPopup().setContent(`<b>${busMatricule}</b><br>Line: ${lineNumber}<br>Speed: ${speed.toFixed(1)} km/h`);
+                bus.marker.getPopup().setContent(`<b>${busMatricule}</b><br>Line: ${lineRef}<br>Speed: ${speed.toFixed(1)} km/h`);
                 
-                if (state.filter && state.filter !== lineNumber) {
-                    if(state.map.hasLayer(bus.marker)) state.map.removeLayer(bus.marker);
+                if (state.filter && state.filter !== lineRef) {
+                    if(state.layers.buses.hasLayer(bus.marker)) state.layers.buses.removeLayer(bus.marker);
                 } else {
-                    if(!state.map.hasLayer(bus.marker)) bus.marker.addTo(state.layers.buses);
+                    if(!state.layers.buses.hasLayer(bus.marker)) bus.marker.addTo(state.layers.buses);
                 }
             }
         }
 
-        // --- ACTION LOGIC ---
+        // --- FOCUS ON ONE BUS + ITS ROAD ---
         function focusBus(busId, lineRef) {
-            applyFilter(lineRef); // Filter map to this bus's road
+            // First apply line filter to show the bus's route
+            applyFilter(lineRef);
+            
+            // Then zoom to the bus
             const bus = state.buses[busId];
             if (bus) {
                 state.map.flyTo(bus.marker.getLatLng(), 15);
                 bus.marker.openPopup();
+            }
+        }
+
+        // --- FOCUS ON ONE ROAD + ITS BUSES ---
+        function focusLine(ref) {
+            applyFilter(ref);
+            
+            // Fit map to show the entire route
+            const bounds = [];
+            state.layers.routes.eachLayer(l => {
+                if (l.lineRef === ref) {
+                    const layerBounds = l.getBounds();
+                    if (layerBounds.isValid()) {
+                        bounds.push(layerBounds);
+                    }
+                }
+            });
+            
+            // Also include bus positions
+            Object.values(state.buses).forEach(bus => {
+                if (bus.marker.lineRef === ref) {
+                    bounds.push(L.latLngBounds([bus.marker.getLatLng(), bus.marker.getLatLng()]));
+                }
+            });
+            
+            if (bounds.length > 0) {
+                let combinedBounds = bounds[0];
+                for (let i = 1; i < bounds.length; i++) {
+                    combinedBounds.extend(bounds[i]);
+                }
+                state.map.fitBounds(combinedBounds, { padding: [50, 50] });
             }
         }
 
@@ -388,7 +421,6 @@
             document.getElementById('active-filter').classList.remove('hidden');
             document.getElementById('filter-name').innerText = "Line " + ref;
 
-            // Sidebar UI Update
             document.querySelectorAll('.line-list .list-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.ref === ref);
             });
@@ -396,7 +428,6 @@
                 el.style.display = (el.dataset.lineRef === ref) ? 'flex' : 'none';
             });
 
-            // Map Layer Filtering
             state.layers.routes.eachLayer(l => {
                 if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
             });
@@ -404,8 +435,8 @@
                 if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
             });
             Object.values(state.buses).forEach(bus => {
-                if (bus.marker.lineRef === ref) bus.marker.addTo(state.map);
-                else state.map.removeLayer(bus.marker);
+                if (bus.marker.lineRef === ref) bus.marker.addTo(state.layers.buses);
+                else state.layers.buses.removeLayer(bus.marker);
             });
 
             log(`Filtered view: Line ${ref}`);
@@ -421,7 +452,7 @@
 
             state.layers.routes.eachLayer(l => l.addTo(state.map));
             state.layers.stops.eachLayer(l => l.addTo(state.map));
-            Object.values(state.buses).forEach(bus => bus.marker.addTo(state.map));
+            Object.values(state.buses).forEach(bus => bus.marker.addTo(state.layers.buses));
             
             fitMap();
             log("Filter reset");
