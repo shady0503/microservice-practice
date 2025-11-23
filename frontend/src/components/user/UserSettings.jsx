@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '../../contexts/AuthContext'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { 
   Settings, Lock, Bell, Shield, Eye, EyeOff, 
   Check, Save, AlertCircle, Smartphone, Mail 

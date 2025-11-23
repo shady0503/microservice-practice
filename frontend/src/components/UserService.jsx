@@ -1,4 +1,4 @@
-import UserDashboard from '@/components/user/UserDashboard'
+import UserDashboard from './user/UserDashboard'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 

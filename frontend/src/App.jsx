@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, MapPin, Calendar, Navigation, Clock, Users, Shield, Smartphone, ArrowRight, Bus, Star, Zap, Check, LogIn, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import UserService from '@/components/UserService'
-import LoginPage from '@/components/auth/LoginPage'
-import RegisterPage from '@/components/auth/RegisterPage'
-import { useAuth } from '@/contexts/AuthContext'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import UserService from './components/UserService'
+import LoginPage from './components/auth/LoginPage'
+import RegisterPage from './components/auth/RegisterPage'
+import { useAuth } from './contexts/AuthContext'
 
 // ... [Previous useCounter, StatCard, FeatureCard components remain unchanged] ...
 // Re-include them here for completeness if this file is fully replaced, 
