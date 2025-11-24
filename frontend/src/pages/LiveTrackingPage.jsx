@@ -197,3 +197,5 @@ export function LiveTrackingPage() {
     </PageTransition>
   );
 }
+
+export default LiveTrackingPage;

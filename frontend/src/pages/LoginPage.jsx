@@ -25,3 +25,5 @@ export function LoginPage() {
     </PageTransition>
   );
 }
+
+export default LoginPage;

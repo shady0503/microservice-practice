@@ -240,3 +240,5 @@ export function PaymentPage() {
     </PageTransition>
   );
 }
+
+export default PaymentPage;

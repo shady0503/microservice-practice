@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Clock, DollarSign, TrendingRight } from 'lucide-react';
+import { Clock, DollarSign, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -44,7 +44,7 @@ export function LineCard({ line, onClick }) {
           </div>
 
           <div className="flex items-center ml-4">
-            <TrendingRight className="w-6 h-6 text-blue-600" />
+            <ArrowRight className="w-6 h-6 text-blue-600" />
           </div>
         </div>
 

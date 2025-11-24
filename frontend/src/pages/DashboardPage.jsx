@@ -94,3 +94,5 @@ export function DashboardPage() {
     </PageTransition>
   );
 }
+
+export default DashboardPage;

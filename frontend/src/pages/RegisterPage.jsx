@@ -25,3 +25,5 @@ export function RegisterPage() {
     </PageTransition>
   );
 }
+
+export default RegisterPage;

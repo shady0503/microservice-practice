@@ -8,3 +8,5 @@ export function SettingsPage() {
     </PageTransition>
   );
 }
+
+export default SettingsPage;

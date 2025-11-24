@@ -24,3 +24,5 @@ export function NotFoundPage() {
     </PageTransition>
   );
 }
+
+export default NotFoundPage;

@@ -109,3 +109,5 @@ export function BusListPage() {
     </PageTransition>
   );
 }
+
+export default BusListPage;

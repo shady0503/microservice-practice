@@ -185,3 +185,5 @@ export function TicketPage() {
     </PageTransition>
   );
 }
+
+export default TicketPage;

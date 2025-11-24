@@ -230,3 +230,5 @@ export function ReservationPage() {
     </PageTransition>
   );
 }
+
+export default ReservationPage;

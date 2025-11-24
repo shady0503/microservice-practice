@@ -238,3 +238,5 @@ export function SearchPage() {
     </PageTransition>
   );
 }
+
+export default SearchPage;

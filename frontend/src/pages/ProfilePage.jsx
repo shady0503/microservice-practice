@@ -8,3 +8,5 @@ export function ProfilePage() {
     </PageTransition>
   );
 }
+
+export default ProfilePage;

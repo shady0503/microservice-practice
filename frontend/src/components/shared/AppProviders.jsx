@@ -30,3 +30,5 @@ export function AppProviders({ children }) {
     </ErrorBoundary>
   );
 }
+
+export default AppProviders;

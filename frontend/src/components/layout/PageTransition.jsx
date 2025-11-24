@@ -34,3 +34,5 @@ export function PageTransition({ children }) {
     </motion.div>
   );
 }
+
+export default PageTransition;

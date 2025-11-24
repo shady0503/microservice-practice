@@ -106,3 +106,5 @@ export function BusLinesPage() {
     </PageTransition>
   );
 }
+
+export default BusLinesPage;

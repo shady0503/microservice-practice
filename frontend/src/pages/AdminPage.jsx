@@ -8,3 +8,5 @@ export function AdminPage() {
     </PageTransition>
   );
 }
+
+export default AdminPage;
