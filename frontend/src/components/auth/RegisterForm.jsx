@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserPlus, Mail, Lock, User, Phone, ArrowRight, Check } from 'lucide-react'
 
-const RegisterForm = ({ onSwitchToLogin }) => {
+const RegisterForm = ({ onSwitchToLogin, onNavigateToLogin, onSuccess }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -38,6 +38,10 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
     try {
       await register(formData)
+      // Call onSuccess after registration
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'inscription')
     } finally {
@@ -231,7 +235,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
                 Vous avez déjà un compte?{' '}
                 <button
                   type="button"
-                  onClick={onSwitchToLogin}
+                  onClick={onNavigateToLogin || onSwitchToLogin}
                   className="text-indigo-600 hover:text-indigo-700 font-bold inline-flex items-center group transition-colors duration-200 text-xs"
                 >
                   Se connecter

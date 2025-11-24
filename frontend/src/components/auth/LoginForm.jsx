@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LogIn, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react'
 
-const LoginForm = ({ onSwitchToRegister }) => {
+const LoginForm = ({ onSwitchToRegister, onNavigateToRegister, onSuccess }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,6 +19,10 @@ const LoginForm = ({ onSwitchToRegister }) => {
 
     try {
       await login(email, password)
+      // Call onSuccess callback after successful login
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.')
     } finally {
@@ -131,7 +135,7 @@ const LoginForm = ({ onSwitchToRegister }) => {
                 Pas encore de compte?{' '}
                 <button
                   type="button"
-                  onClick={onSwitchToRegister}
+                  onClick={onNavigateToRegister || onSwitchToRegister}
                   className="text-blue-600 hover:text-blue-700 font-bold inline-flex items-center group transition-colors duration-200 text-sm"
                 >
                   Créer un compte

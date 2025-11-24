@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { RootLayout } from './components/layout/RootLayout';
+import { AuthLayoutWrapper } from './components/layout/AuthLayoutWrapper';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/shared/ProtectedRoute';
 
@@ -23,20 +24,26 @@ import { NotFoundPage } from './pages/NotFoundPage';
 export function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes with RootLayout */}
-      <Route element={<RootLayout />}>
-        <Route path="/" element={<HomePage />} />
+      {/* Auth routes (NO navbar) */}
+      <Route element={<AuthLayoutWrapper />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+      </Route>
 
-        {/* Booking flow (accessible to all) */}
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/lines" element={<BusLinesPage />} />
-        <Route path="/lines/:lineId/buses" element={<BusListPage />} />
-        <Route path="/buses/:busId/reserve" element={<ReservationPage />} />
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/ticket/:ticketId" element={<TicketPage />} />
-        <Route path="/track/:ticketId" element={<LiveTrackingPage />} />
+      {/* Public routes with navbar */}
+      <Route element={<RootLayout />}>
+        <Route path="/" element={<HomePage />} />
+
+        {/* Booking flow - PROTECTED (require login) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/lines" element={<BusLinesPage />} />
+          <Route path="/lines/:lineId/buses" element={<BusListPage />} />
+          <Route path="/buses/:busId/reserve" element={<ReservationPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/ticket/:ticketId" element={<TicketPage />} />
+          <Route path="/track/:ticketId" element={<LiveTrackingPage />} />
+        </Route>
       </Route>
 
       {/* Protected dashboard routes */}
