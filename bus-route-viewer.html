@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanMove Live Operations Center</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --sidebar-width: 350px;
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --text-light: #ecf0f1;
+            --bg-dark: #1a1a1a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: var(--bg-dark); }
+
+        .dashboard-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        #map { flex: 1; height: 100%; z-index: 1; min-width: 0; }
+
+        .sidebar {
+            width: 350px;
+            background: var(--primary);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .brand { font-size: 1.4rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .brand i { color: var(--accent); }
+
+        .connection-status {
+            font-size: 0.8rem;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); transition: background 0.3s; }
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .stat-label { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; }
+
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
+        
+        .control-panel { display: flex; gap: 5px; margin-bottom: 20px; }
+        .btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-light);
+        }
+        .btn:hover { background: rgba(255,255,255,0.2); }
+        .btn.active { background: var(--accent); color: white; }
+        
+        .filter-info {
+            background: rgba(241, 196, 15, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filter-info button {
+            background: none; border: none; color: inherit; cursor: pointer; font-weight: bold;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin: 20px 0 10px 0;
+        }
+        .bus-list, .line-list { display: flex; flex-direction: column; gap: 5px; }
+        
+        .list-item {
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .list-item:hover { background: rgba(255,255,255,0.08); }
+        .list-item.active { background: rgba(52, 152, 219, 0.15); border-left-color: var(--accent); }
+
+        .item-main { font-weight: 600; font-size: 0.9rem; }
+        .item-sub { font-size: 0.75rem; opacity: 0.7; }
+        .item-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; background: rgba(255,255,255,0.1); }
+
+        .log-feed {
+            height: 150px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+        .log-entry { margin-bottom: 4px; display: flex; gap: 8px; }
+        .log-time { color: var(--accent); min-width: 60px; }
+        .log-msg { opacity: 0.8; }
+
+        .bus-marker-icon {
+            background: var(--accent);
+            border: 2px solid white;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            transition: all 0.3s;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fas fa-bus-alt"></i>
+                    <span>URBAN MOVE</span>
+                </div>
+                <div class="connection-status">
+                    <div id="status-dot" class="status-dot"></div>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-buses">0</div>
+                    <div class="stat-label">Active Buses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-speed">0</div>
+                    <div class="stat-label">Avg Speed</div>
+                </div>
+            </div>
+
+            <div class="sidebar-content">
+                <div class="control-panel">
+                    <button class="btn active" id="btn-routes" onclick="toggleLayer('routes')">Routes</button>
+                    <button class="btn active" id="btn-stops" onclick="toggleLayer('stops')">Stops</button>
+                    <button class="btn" onclick="fitMap()">Fit Map</button>
+                </div>
+
+                <div id="active-filter" class="filter-info hidden">
+                    <span>Filtering by: <b id="filter-name">Line</b></span>
+                    <button onclick="resetFilter()"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="section-title">Network Lines</div>
+                <div id="line-list" class="line-list"></div>
+
+                <div class="section-title">Live Buses</div>
+                <div id="bus-list" class="bus-list">
+                    <div class="list-item" style="justify-content:center; opacity:0.5;">Waiting for data...</div>
+                </div>
+            </div>
+
+            <div class="log-feed" id="log-feed"></div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const CONFIG = {
+            trajetUrl: 'http://localhost:8081/api',
+            wsUrl: 'ws://localhost:8080/ws/gps-tracking',
+            center: [33.9716, -6.8498],
+            zoom: 12
+        };
+
+        const state = {
+            map: null,
+            layers: { 
+                routes: L.layerGroup(), 
+                stops: L.layerGroup(), 
+                buses: L.layerGroup() 
+            },
+            buses: {}, 
+            filter: null, 
+            stats: { totalSpeed: 0, count: 0 }
+        };
+
+        function initMap() {
+            state.map = L.map('map').setView(CONFIG.center, CONFIG.zoom);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '©OpenStreetMap, ©CartoDB'
+            }).addTo(state.map);
+            
+            Object.values(state.layers).forEach(l => l.addTo(state.map));
+        }
+
+        function log(msg) {
+            const feed = document.getElementById('log-feed');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `<div class="log-time">${new Date().toLocaleTimeString().split(' ')[0]}</div><div class="log-msg">${msg}</div>`;
+            feed.insertBefore(div, feed.firstChild);
+            if(feed.children.length > 50) feed.removeChild(feed.lastChild);
+        }
+
+        // --- DATA LOADING ---
+        async function loadNetwork() {
+            try {
+                const res = await fetch(`${CONFIG.trajetUrl}/lines`);
+                const lines = await res.json();
+                const list = document.getElementById('line-list');
+                list.innerHTML = '';
+
+                for (const line of lines) {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.dataset.ref = line.ref;
+                    item.innerHTML = `<div><span class="item-main">${line.ref}</span> <span class="item-sub">${line.name}</span></div>`;
+                    item.onclick = () => focusLine(line.ref);
+                    list.appendChild(item);
+
+                    const routesRes = await fetch(`${CONFIG.trajetUrl}/lines/${line.ref}/routes`);
+                    const routes = await routesRes.json();
+                    const color = getColor(line.ref);
+
+                    routes.forEach(route => {
+                        if (route.geometry) {
+                            const poly = L.geoJSON(JSON.parse(route.geometry), {
+                                style: { color: color, weight: 3, opacity: 0.5 }
+                            }).bindPopup(`Line ${line.ref}: ${route.name}`);
+                            poly.lineRef = line.ref; 
+                            poly.addTo(state.layers.routes);
+                        }
+
+                        fetch(`${CONFIG.trajetUrl}/lines/routes/${route.id}/stops`).then(r => r.json()).then(stops => {
+                            stops.forEach(stop => {
+                                const marker = L.circleMarker([stop.latitude, stop.longitude], {
+                                    radius: 3, color: color, fillColor: '#000', fillOpacity: 1, weight: 1
+                                }).bindTooltip(`${stop.name}`, { direction: 'top' });
+                                
+                                marker.lineRef = line.ref; 
+                                marker.addTo(state.layers.stops);
+                            });
+                        });
+                    });
+                }
+                log(`Loaded network: ${lines.length} lines`);
+            } catch (e) { log("Error loading network: " + e.message); }
+        }
+
+        // --- WEBSOCKET ---
+        function connectWs() {
+            const ws = new WebSocket(CONFIG.wsUrl);
+            ws.onopen = () => {
+                document.getElementById('status-dot').classList.add('connected');
+                document.getElementById('status-text').innerText = 'Connected';
+                log("Real-time stream active");
+            };
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                if(msg.type === 'GPS_UPDATE') updateBus(msg.payload);
+            };
+            ws.onclose = () => setTimeout(connectWs, 5000);
+        }
+
+        function updateBus(data) {
+            const { busId, busMatricule, latitude, longitude, speed, lineNumber } = data;
+            
+            // Extract line ref from route name (e.g., "L32H: Harhoura – Bab El Had" -> "32H")
+            let lineRef = lineNumber;
+            if (lineNumber && lineNumber.includes(':')) {
+                lineRef = lineNumber.split(':')[0].replace(/^L/, '').trim();
+            }
+            
+            const color = getColor(lineRef);
+
+            state.stats.totalSpeed += speed;
+            state.stats.count++;
+            if(state.stats.count > 50) { state.stats.totalSpeed = speed; state.stats.count = 1; }
+            document.getElementById('stat-speed').innerText = (state.stats.totalSpeed / state.stats.count).toFixed(1);
+
+            if (!state.buses[busId]) {
+                const icon = L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div class="bus-marker-icon" style="background:${color}"><i class="fas fa-bus"></i></div>`,
+                    iconSize: [24, 24]
+                });
+                
+                const marker = L.marker([latitude, longitude], { icon })
+                    .bindPopup(`<b>${busMatricule}</b><br>Line: ${lineRef}<br>Speed: ${speed.toFixed(1)} km/h`);
+                
+                marker.lineRef = lineRef;
+                
+                if (!state.filter || state.filter === lineRef) {
+                    marker.addTo(state.layers.buses);
+                }
+
+                const el = document.createElement('div');
+                el.id = `bus-${busId}`;
+                el.className = 'list-item';
+                el.dataset.lineRef = lineRef;
+                el.innerHTML = `
+                    <div><div class="item-main">${busMatricule}</div><div class="item-sub">Line ${lineRef}</div></div>
+                    <div class="item-badge">${speed.toFixed(0)} km/h</div>
+                `;
+                el.onclick = () => focusBus(busId, lineRef);
+                
+                const list = document.getElementById('bus-list');
+                if (list.children[0] && list.children[0].innerText.includes('Waiting')) list.innerHTML = '';
+                
+                list.appendChild(el);
+                state.buses[busId] = { marker, el };
+                document.getElementById('stat-buses').innerText = Object.keys(state.buses).length;
+            } else {
+                const bus = state.buses[busId];
+                bus.marker.setLatLng([latitude, longitude]);
+                bus.marker.getPopup().setContent(`<b>${busMatricule}</b><br>Line: ${lineRef}<br>Speed: ${speed.toFixed(1)} km/h`);
+                
+                if (state.filter && state.filter !== lineRef) {
+                    if(state.layers.buses.hasLayer(bus.marker)) state.layers.buses.removeLayer(bus.marker);
+                } else {
+                    if(!state.layers.buses.hasLayer(bus.marker)) bus.marker.addTo(state.layers.buses);
+                }
+            }
+        }
+
+        // --- FOCUS ON ONE BUS + ITS ROAD ---
+        function focusBus(busId, lineRef) {
+            // First apply line filter to show the bus's route
+            applyFilter(lineRef);
+            
+            // Then zoom to the bus
+            const bus = state.buses[busId];
+            if (bus) {
+                state.map.flyTo(bus.marker.getLatLng(), 15);
+                bus.marker.openPopup();
+            }
+        }
+
+        // --- FOCUS ON ONE ROAD + ITS BUSES ---
+        function focusLine(ref) {
+            applyFilter(ref);
+            
+            // Fit map to show the entire route
+            const bounds = [];
+            state.layers.routes.eachLayer(l => {
+                if (l.lineRef === ref) {
+                    const layerBounds = l.getBounds();
+                    if (layerBounds.isValid()) {
+                        bounds.push(layerBounds);
+                    }
+                }
+            });
+            
+            // Also include bus positions
+            Object.values(state.buses).forEach(bus => {
+                if (bus.marker.lineRef === ref) {
+                    bounds.push(L.latLngBounds([bus.marker.getLatLng(), bus.marker.getLatLng()]));
+                }
+            });
+            
+            if (bounds.length > 0) {
+                let combinedBounds = bounds[0];
+                for (let i = 1; i < bounds.length; i++) {
+                    combinedBounds.extend(bounds[i]);
+                }
+                state.map.fitBounds(combinedBounds, { padding: [50, 50] });
+            }
+        }
+
+        function applyFilter(ref) {
+            state.filter = ref;
+            document.getElementById('active-filter').classList.remove('hidden');
+            document.getElementById('filter-name').innerText = "Line " + ref;
+
+            document.querySelectorAll('.line-list .list-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.ref === ref);
+            });
+            document.querySelectorAll('#bus-list .list-item').forEach(el => {
+                el.style.display = (el.dataset.lineRef === ref) ? 'flex' : 'none';
+            });
+
+            state.layers.routes.eachLayer(l => {
+                if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
+            });
+            state.layers.stops.eachLayer(l => {
+                if (l.lineRef === ref) l.addTo(state.map); else state.map.removeLayer(l);
+            });
+            Object.values(state.buses).forEach(bus => {
+                if (bus.marker.lineRef === ref) bus.marker.addTo(state.layers.buses);
+                else state.layers.buses.removeLayer(bus.marker);
+            });
+
+            log(`Filtered view: Line ${ref}`);
+        }
+
+        function resetFilter() {
+            state.filter = null;
+            document.getElementById('active-filter').classList.add('hidden');
+            document.querySelectorAll('.list-item').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'flex';
+            });
+
+            state.layers.routes.eachLayer(l => l.addTo(state.map));
+            state.layers.stops.eachLayer(l => l.addTo(state.map));
+            Object.values(state.buses).forEach(bus => bus.marker.addTo(state.layers.buses));
+            
+            fitMap();
+            log("Filter reset");
+        }
+
+        function getColor(str) {
+            let hash = 0; 
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + '00000'.substring(0, 6 - c.length) + c;
+        }
+
+        function toggleLayer(name) {
+            const layer = state.layers[name];
+            const btn = document.getElementById(`btn-${name}`);
+            if (state.map.hasLayer(layer)) {
+                state.map.removeLayer(layer);
+                btn.classList.remove('active');
+            } else {
+                state.map.addLayer(layer);
+                btn.classList.add('active');
+            }
+        }
+
+        function fitMap() {
+            const group = new L.featureGroup();
+            state.layers.routes.eachLayer(l => { if(state.map.hasLayer(l)) group.addLayer(l); });
+            if (Object.keys(group._layers).length > 0) state.map.fitBounds(group.getBounds());
+            else state.map.setView(CONFIG.center, CONFIG.zoom);
+        }
+
+        // Start
+        initMap();
+        loadNetwork();
+        connectWs();
+    </script>
+</body>
+</html>
