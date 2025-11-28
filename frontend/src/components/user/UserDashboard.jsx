@@ -1,39 +1,47 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
-import { 
-  User, Settings, Users, LogOut, Bus, 
+import {
+  User, Settings, Users, LogOut, Bus, Ticket, MapPin,
   Home, Menu, X
 } from 'lucide-react'
 import UserProfile from './UserProfile'
 import UserSettings from './UserSettings'
-import AdminDashboard from './AdminDashboard'
+import AdminDashboardTabs from './AdminDashboardTabs'
+import BookingFlow from './BookingFlow'
+import TicketHistory from './TicketHistory'
 
 const UserDashboard = () => {
   const { user, logout } = useAuth()
-  const [activeView, setActiveView] = useState('profile')
+  const [activeView, setActiveView] = useState('booking')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isAdmin = user?.role === 'ADMIN'
 
   const navigation = [
+    { id: 'booking', label: 'Réserver', icon: MapPin, requiresAdmin: false },
+    { id: 'tickets', label: 'Mes Billets', icon: Ticket, requiresAdmin: false },
     { id: 'profile', label: 'Mon Profil', icon: User, requiresAdmin: false },
     { id: 'settings', label: 'Paramètres', icon: Settings, requiresAdmin: false },
-    { id: 'admin', label: 'Gestion Utilisateurs', icon: Users, requiresAdmin: true },
+    { id: 'admin', label: 'Administration', icon: Users, requiresAdmin: true },
   ]
 
   const filteredNavigation = navigation.filter(item => !item.requiresAdmin || isAdmin)
 
   const renderView = () => {
     switch (activeView) {
+      case 'booking':
+        return <BookingFlow />
+      case 'tickets':
+        return <TicketHistory />
       case 'profile':
         return <UserProfile />
       case 'settings':
         return <UserSettings />
       case 'admin':
-        return isAdmin ? <AdminDashboard /> : <UserProfile />
+        return isAdmin ? <AdminDashboardTabs /> : <UserProfile />
       default:
-        return <UserProfile />
+        return <BookingFlow />
     }
   }
 
