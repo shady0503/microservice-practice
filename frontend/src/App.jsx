@@ -5,12 +5,13 @@ import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import DashboardPage from './pages/DashboardPage'; // Import the new dashboard
-import TicketHistory from './pages/TicketHistory'; // Import history
+import DashboardPage from './pages/DashboardPage';
+import TicketHistory from './pages/TicketHistory';
+import ProfilePage from './pages/ProfilePage';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     if (!user) return <Navigate to="/login" />;
     return children;
 };
@@ -25,7 +26,6 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           
-          {/* Protected Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardPage />
@@ -34,6 +34,11 @@ function App() {
           <Route path="/history" element={
             <ProtectedRoute>
               <TicketHistory />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           } />
         </Routes>

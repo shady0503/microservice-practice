@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Ticket, Map } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -13,48 +13,37 @@ const Navbar = () => {
         navigate('/');
     };
 
-    // Helper to get display name
     const getDisplayName = () => {
         if (!user) return "";
-        // Check for UserResponse structure from backend
-        if (user.user) {
-            return user.user.firstName || user.user.email;
-        }
-        // Fallback for direct user object
-        return user.firstName || user.email;
+        const u = user.user || user;
+        return u.firstName || u.email;
     };
 
     return (
-        <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border/40">
+        <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
             <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-                <Link to="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                    UrbanMoveMS
+                <Link to="/" className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg">U</div>
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">UrbanMove</span>
                 </Link>
 
                 <div className="flex items-center gap-4">
                     {user ? (
                         <>
-                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <User className="h-4 w-4 text-primary" />
+                            <Link to="/dashboard"><Button variant="ghost" size="sm" className="gap-2"><Map className="w-4 h-4" /> Map</Button></Link>
+                            <Link to="/history"><Button variant="ghost" size="sm" className="gap-2"><Ticket className="w-4 h-4" /> Tickets</Button></Link>
+                            <Link to="/profile">
+                                <div className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200 cursor-pointer">
+                                    <span className="text-sm font-medium text-slate-700 hidden sm:block">{getDisplayName()}</span>
+                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary"><User className="h-4 w-4" /></div>
                                 </div>
-                                <span className="hidden sm:inline-block">
-                                    {getDisplayName()}
-                                </span>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                <LogOut className="h-4 w-4" />
-                                <span className="hidden sm:inline">Déconnexion</span>
-                            </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-400 hover:text-red-500 hover:bg-red-50"><LogOut className="h-4 w-4" /></Button>
                         </>
                     ) : (
                         <>
-                            <Link to="/login">
-                                <Button variant="ghost" size="sm">Se connecter</Button>
-                            </Link>
-                            <Link to="/signup">
-                                <Button size="sm" className="rounded-full">Créer un compte</Button>
-                            </Link>
+                            <Link to="/login"><Button variant="ghost" size="sm">Login</Button></Link>
+                            <Link to="/signup"><Button size="sm" className="rounded-full px-6">Sign Up</Button></Link>
                         </>
                     )}
                 </div>

@@ -1,6 +1,5 @@
 package com.soa.busservice.kafka;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soa.busservice.event.RouteCreatedEvent;
 import com.soa.busservice.model.Bus;
@@ -15,7 +14,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
@@ -30,46 +28,44 @@ public class KafkaConsumerService {
     private final BusMovementSimulator simulator;
     private final Random random = new Random();
 
-    @KafkaListener(topics = "line.changes", groupId = "bus-service-group")
-    public void consumeLineChange(String message) {
-        try {
-            Map<String, Object> payload = objectMapper.readValue(message, new TypeReference<Map<String, Object>>() {});
-            String changeType = (String) payload.get("changeType");
-            String lineCode = (String) payload.get("lineCode");
-            log.info("Processed line change event: {} for line {}", changeType, lineCode);
-        } catch (Exception e) {
-            log.error("Error processing line change event: {}", message, e);
-        }
-    }
-
     @KafkaListener(topics = "route-created", groupId = "bus-service-group")
     public void consumeRouteCreatedEvent(String payload) {
         try {
             RouteCreatedEvent event = objectMapper.readValue(payload, RouteCreatedEvent.class);
             log.info("New Route Received: {}", event.getRouteName());
 
-            // 1. Cache Geometry
+            // 1. Cache Geometry using the FULL name (key for simulator)
             routeCache.cacheRoute(event.getRouteName(), event.getGeometry());
 
-            // 2. Deploy Simulation Buses
-            int count = 2; 
+            // 2. Extract clean line code (e.g., "L32H: Name..." -> "L32H")
+            String fullRouteName = event.getRouteName();
+            String cleanLineCode = fullRouteName.contains(":") 
+                    ? fullRouteName.split(":")[0].trim() 
+                    : fullRouteName;
+
+            // 3. Deploy Simulation Buses
+            int count = 2; // Buses per route
 
             for (int i = 0; i < count; i++) {
-                Bus bus = new Bus();
-                String busNumber = event.getRouteName().split(":")[0].trim() 
-                        + "-BUS-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+                // Check to avoid duplicate buses on restart
+                String busNumberPrefix = cleanLineCode + "-BUS-";
                 
-                if (busService.getAllBuses().stream().anyMatch(b -> b.getBusNumber().equals(busNumber))) {
+                // Simple check if we already have buses for this line to prevent flooding on restart
+                if (busService.getBusesByLineCode(cleanLineCode).size() >= count) {
                     continue;
                 }
 
+                String busNumber = busNumberPrefix + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+
+                Bus bus = new Bus();
                 bus.setBusNumber(busNumber);
-                bus.setLineCode(event.getRouteName());
+                // CRITICAL FIX: Use clean code "L7" instead of full name for matching
+                bus.setLineCode(cleanLineCode); 
                 bus.setCapacity(50);
                 bus.setStatus(Status.ACTIVE);
                 
                 // Set Random Start Position
-                List<double[]> path = routeCache.getPath(event.getRouteName());
+                List<double[]> path = routeCache.getPath(fullRouteName);
                 if (path != null && !path.isEmpty()) {
                     int randomStart = random.nextInt(path.size());
                     bus.setLatitude(path.get(randomStart)[0]);
@@ -79,7 +75,7 @@ public class KafkaConsumerService {
                 try {
                     busService.saveBusWithRetry(bus);
                     simulator.addBus(bus.getId());
-                    log.info("Deployed bus {} on route {}", busNumber, event.getRouteName());
+                    log.info("Deployed bus {} on route {} (Ref: {})", busNumber, fullRouteName, cleanLineCode);
                 } catch (Exception ex) {
                     log.warn("Could not deploy bus: {}", ex.getMessage());
                 }

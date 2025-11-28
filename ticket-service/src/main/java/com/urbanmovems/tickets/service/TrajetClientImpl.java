@@ -23,32 +23,32 @@ public class TrajetClientImpl implements TrajetClient {
     @Value("${ticket.price.default-amount:1500}")
     private int defaultPriceAmount;
 
-    @Override
-    @CircuitBreaker(name = "trajetService", fallbackMethod = "trajetExistsFallback")
-    @Retry(name = "trajetService")
-    public boolean trajetExists(Long trajetId) {
-        log.debug("Checking if trajet exists: {}", trajetId);
+@Override
+@CircuitBreaker(name = "trajetService", fallbackMethod = "trajetExistsFallback")
+@Retry(name = "trajetService")
+public boolean trajetExists(Long trajetId) {
+    log.debug("Checking if trajet exists: {}", trajetId);
 
-        try {
-            WebClient webClient = webClientBuilder.baseUrl(trajetServiceUrl).build();
+    try {
+        WebClient webClient = webClientBuilder.baseUrl(trajetServiceUrl).build();
 
-            webClient.get()
-                    .uri("/api/trajets/{id}", trajetId)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
+        webClient.get()
+                // CORRECTION : Utiliser le bon endpoint exposé par LineController
+                .uri("/api/lines/routes/{id}", trajetId) 
+                .retrieve()
+                .toBodilessEntity()
+                .block();
 
-            log.debug("Trajet {} exists", trajetId);
-            return true;
-        } catch (WebClientResponseException.NotFound e) {
-            log.warn("Trajet {} not found", trajetId);
-            return false;
-        } catch (Exception e) {
-            log.error("Error checking trajet existence", e);
-            throw e;
-        }
+        log.debug("Trajet {} exists", trajetId);
+        return true;
+    } catch (WebClientResponseException.NotFound e) {
+        log.warn("Trajet {} not found", trajetId);
+        return false;
+    } catch (Exception e) {
+        log.error("Error checking trajet existence", e);
+        throw e;
     }
-
+}
     @Override
     @CircuitBreaker(name = "trajetService", fallbackMethod = "getTrajetPriceFallback")
     @Retry(name = "trajetService")

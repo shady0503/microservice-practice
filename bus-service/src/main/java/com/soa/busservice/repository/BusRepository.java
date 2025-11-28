@@ -13,6 +13,9 @@ import java.util.UUID;
 public interface BusRepository extends JpaRepository<Bus, UUID> {
     Optional<Bus> findByBusNumber(String busNumber);
     List<Bus> findByStatus(Status status);
+    
+    // Strict exact match for line code
     List<Bus> findByLineCode(String lineCode);
+    
     boolean existsByBusNumber(String busNumber);
 }

@@ -28,6 +28,9 @@ public class TicketResponse {
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Fixed: Added field for QR Code generation
+    private String qrCodeData;
 
     public static TicketResponse fromTicket(Ticket ticket) {
         return TicketResponse.builder()
@@ -41,6 +44,7 @@ public class TicketResponse {
                 .expiresAt(ticket.getExpiresAt())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
+                .qrCodeData(ticket.getId().toString()) // Use Ticket ID as QR data
                 .build();
     }
 }
