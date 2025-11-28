@@ -31,179 +31,178 @@ public class BusMovementSimulator {
     private final KafkaProducerService producer;
     private final RouteGeometryCache routeCache;
     private final Random random = new Random();
-
-    // In-memory simulation state storage
     private final Map<UUID, SimulationContext> busContexts = new ConcurrentHashMap<>();
 
     private enum SimState {
-        MOVING,
-        BOARDING, // Paused at a stop
-        RESTING   // Cool-down at terminus
+        MOVING, BOARDING, RESTING
     }
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private static class SimulationContext {
         private SimState state = SimState.MOVING;
         private int currentNodeIndex = 0;
-        private double progressToNextNode = 0.0; // 0.0 to 1.0
+        private double progressToNextNode = 0.0;
         private LocalDateTime stateEntryTime = LocalDateTime.now();
-        private double speedKmH = 40.0; // Default speed
-        private boolean initialized = false; // Flag to randomize start position once
-        private String routeKey; // The exact key used in RouteGeometryCache
+        private double speedKmH = 40.0;
+        private boolean initialized = false;
+        private String routeKey;
+
+        // Metadata
+        private int occupancy = 0;
+        private String nextStopName = "Terminus";
+        private int nextStopIndex = -1;
     }
 
     @PostConstruct
     public void loadActiveBuses() {
-        // Note: For persistent buses, we might not know the full route name on startup 
-        // if it's not stored in the DB. In a real app, Bus entity should store routeName.
-        // For this fix, we primarily rely on the dynamic addition via KafkaConsumerService.
         busService.getBusesByStatus(Status.ACTIVE).forEach(this::addBus);
     }
 
     public void addBus(Bus bus) {
-        addBus(bus.getId(), bus.getLineCode()); // Fallback to lineCode if name unknown
+        addBus(bus.getId(), bus.getLineCode());
     }
 
     public void addBus(BusResponse bus) {
         addBus(bus.getId(), bus.getLineCode());
     }
-    
+
     public void addBus(UUID busId) {
-        // Default behavior (might fail if key doesn't match cache, but needed for interface compat)
-        // Ideally, we fetch the bus to get the lineCode
         try {
             BusResponse bus = busService.getBusById(busId);
             addBus(busId, bus.getLineCode());
         } catch (Exception e) {
-            log.warn("Could not load bus {} for simulation", busId);
+            log.warn("Could not load bus {}", busId);
         }
     }
 
-    /**
-     * Add a bus to the simulator with a specific route key for geometry lookup
-     */
     public void addBus(UUID busId, String routeKey) {
-        if (busContexts.containsKey(busId)) return;
-        
+        if (busContexts.containsKey(busId))
+            return;
         SimulationContext ctx = new SimulationContext();
         ctx.setRouteKey(routeKey);
-        // Randomize initial speed slightly for realism (30 - 50 km/h)
         ctx.setSpeedKmH(30 + random.nextDouble() * 20);
+        ctx.setOccupancy(random.nextInt(20));
         busContexts.put(busId, ctx);
-        log.info("Bus {} added to simulation engine on route '{}'", busId, routeKey);
     }
 
-    @Scheduled(fixedRate = 1000) // 1 Hz Tick (Every 1 second)
+    @Scheduled(fixedRate = 1000)
     public void tick() {
         busContexts.forEach((busId, ctx) -> {
             try {
                 BusResponse bus = busService.getBusById(busId);
-                
-                // Use the stored routeKey to fetch geometry, not just the short lineCode
                 List<double[]> path = routeCache.getPath(ctx.getRouteKey());
 
-                // Fallback: try lineCode if routeKey failed (legacy support)
-                if (path == null || path.isEmpty()) {
-                    path = routeCache.getPath(bus.getLineCode());
+                // If path not found, try to resolve a valid route key from the line code
+                if (path == null) {
+                    String resolvedKey = routeCache.getAnyRouteName(bus.getLineCode());
+                    if (resolvedKey != null) {
+                        ctx.setRouteKey(resolvedKey);
+                        path = routeCache.getPath(resolvedKey);
+                    }
                 }
 
-                if (path == null || path.isEmpty()) {
-                    // log.debug("No path found for bus {} (Key: {})", bus.getBusNumber(), ctx.getRouteKey());
+                if (path == null || path.isEmpty())
                     return;
-                }
 
-                // 1. Initialization: Randomize Start Position
                 if (!ctx.isInitialized()) {
-                    int randomStartIndex = random.nextInt(path.size());
-                    ctx.setCurrentNodeIndex(randomStartIndex);
+                    ctx.setCurrentNodeIndex(random.nextInt(path.size()));
                     ctx.setInitialized(true);
-                    log.info("Bus {} initialized at random index {}/{}", bus.getBusNumber(), randomStartIndex, path.size());
+                    updateNextStop(ctx, path);
                 }
 
                 switch (ctx.getState()) {
-                    case MOVING:
-                        handleMovingState(bus, ctx, path);
-                        break;
-                    case BOARDING:
-                        handleBoardingState(bus, ctx, path);
-                        break;
-                    case RESTING:
-                        handleRestingState(bus, ctx);
-                        break;
+                    case MOVING -> handleMovingState(bus, ctx, path);
+                    case BOARDING -> handleBoardingState(bus, ctx);
+                    case RESTING -> handleRestingState(bus, ctx);
                 }
-
             } catch (Exception e) {
-                log.error("Error in simulation tick for bus {}", busId, e);
-                // Don't remove immediately to allow transient errors recovery
+                log.error("Sim Error", e);
             }
         });
     }
 
-    private void handleMovingState(BusResponse bus, SimulationContext ctx, List<double[]> path) {
-        int currentIndex = ctx.getCurrentNodeIndex();
-        int nextIndex = currentIndex + 1;
+    private void updateNextStop(SimulationContext ctx, List<double[]> path) {
+        int lookAhead = ctx.getCurrentNodeIndex() + 1;
+        while (lookAhead < path.size()) {
+            if (routeCache.isStop(ctx.getRouteKey(), lookAhead)) {
+                ctx.setNextStopIndex(lookAhead);
+                ctx.setNextStopName(routeCache.getStopName(ctx.getRouteKey(), lookAhead));
+                return;
+            }
+            lookAhead++;
+        }
+        ctx.setNextStopName("Terminus");
+        ctx.setNextStopIndex(path.size() - 1);
+    }
 
-        // End of route reached? -> RESTING
+    private String calculateEta(SimulationContext ctx, List<double[]> path) {
+        if (ctx.getNextStopIndex() <= ctx.getCurrentNodeIndex())
+            return "Arriving";
+
+        // Calculate distance along the path (sum of segments)
+        double totalDistanceMeters = 0.0;
+        for (int i = ctx.getCurrentNodeIndex(); i < ctx.getNextStopIndex(); i++) {
+            double[] p1 = path.get(i);
+            double[] p2 = path.get(i + 1);
+            // Haversine-like approximation for short distances (Euclidean on lat/lon *
+            // meters per degree)
+            // 111,000 meters per degree is a rough approximation but sufficient here
+            double dist = Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2)) * 111000;
+            totalDistanceMeters += dist;
+        }
+
+        // Use a stable average speed for ETA (e.g., 30 km/h) mixed with current speed
+        // This prevents ETA from jumping wildly if the bus momentarily stops or speeds
+        // up
+        double avgSpeedKmH = (ctx.getSpeedKmH() + 30.0) / 2.0;
+        double speedMs = Math.max(1.0, avgSpeedKmH / 3.6);
+
+        int seconds = (int) (totalDistanceMeters / speedMs);
+        int min = seconds / 60;
+
+        if (min < 1)
+            return "< 1 min";
+        return min + " min";
+    }
+
+    private void handleMovingState(BusResponse bus, SimulationContext ctx, List<double[]> path) {
+        int nextIndex = ctx.getCurrentNodeIndex() + 1;
         if (nextIndex >= path.size()) {
             enterState(ctx, SimState.RESTING);
-            // log.info("Bus {} reached terminus. Entering RESTING state.", bus.getBusNumber());
             return;
         }
 
-        // --- Physics Calculation ---
-        double[] p1 = path.get(currentIndex);
-        double[] p2 = path.get(nextIndex);
-        
-        double distanceMeters = calculateDistance(p1[0], p1[1], p2[0], p2[1]);
-        
-        if (distanceMeters < 1.0) {
-            ctx.setCurrentNodeIndex(nextIndex);
-            ctx.setProgressToNextNode(0.0);
-            return;
-        }
+        // Move logic (simplified)
+        ctx.setProgressToNextNode(ctx.getProgressToNextNode() + 0.2); // Fast jump for demo
 
-        double speedMetersPerSec = ctx.getSpeedKmH() * 1000.0 / 3600.0;
-        double stepFraction = speedMetersPerSec / distanceMeters;
-
-        // Move forward
-        ctx.setProgressToNextNode(ctx.getProgressToNextNode() + stepFraction);
-
-        // --- Arrival at Next Node ---
         if (ctx.getProgressToNextNode() >= 1.0) {
             ctx.setCurrentNodeIndex(nextIndex);
             ctx.setProgressToNextNode(0.0);
+            updateNextStop(ctx, path);
 
-            // Check for Stop (heuristic)
-            if (routeCache.isStop(ctx.getRouteKey(), nextIndex) && nextIndex != path.size() - 1) {
+            if (routeCache.isStop(ctx.getRouteKey(), nextIndex)) {
                 enterState(ctx, SimState.BOARDING);
-                publishUpdate(bus, p2[0], p2[1], 0.0); 
+                // Update occupancy
+                ctx.setOccupancy(Math.max(0, Math.min(50, ctx.getOccupancy() + random.nextInt(5) - 2)));
+                publishUpdate(bus, ctx, path);
                 return;
             }
         }
-
-        // --- Interpolation Update ---
-        double[] currentPos = interpolate(p1, p2, Math.min(ctx.getProgressToNextNode(), 1.0));
-        publishUpdate(bus, currentPos[0], currentPos[1], ctx.getSpeedKmH());
+        publishUpdate(bus, ctx, path);
     }
 
-    private void handleBoardingState(BusResponse bus, SimulationContext ctx, List<double[]> path) {
-        long secondsElapsed = ChronoUnit.SECONDS.between(ctx.getStateEntryTime(), LocalDateTime.now());
-        
-        if (secondsElapsed >= 5) {
+    private void handleBoardingState(BusResponse bus, SimulationContext ctx) {
+        if (ChronoUnit.SECONDS.between(ctx.getStateEntryTime(), LocalDateTime.now()) > 3) {
             enterState(ctx, SimState.MOVING);
-            ctx.setSpeedKmH(30 + random.nextDouble() * 20);
         }
     }
 
     private void handleRestingState(BusResponse bus, SimulationContext ctx) {
-        long minutesElapsed = ChronoUnit.MINUTES.between(ctx.getStateEntryTime(), LocalDateTime.now());
-
-        // Reduced resting time for demo purposes (1 minute instead of 10)
-        if (minutesElapsed >= 1) {
+        if (ChronoUnit.SECONDS.between(ctx.getStateEntryTime(), LocalDateTime.now()) > 10) {
             ctx.setCurrentNodeIndex(0);
-            ctx.setProgressToNextNode(0.0);
+            ctx.setOccupancy(0);
             enterState(ctx, SimState.MOVING);
-            log.info("Bus {} finished resting. Restarting route.", bus.getBusNumber());
         }
     }
 
@@ -212,33 +211,12 @@ public class BusMovementSimulator {
         ctx.setStateEntryTime(LocalDateTime.now());
     }
 
-    private void publishUpdate(BusResponse bus, double lat, double lon, double speed) {
+    private void publishUpdate(BusResponse bus, SimulationContext ctx, List<double[]> path) {
+        double[] p = path.get(ctx.getCurrentNodeIndex());
         producer.publishLocationUpdate(new BusLocationEvent(
-                bus.getId().toString(), 
-                bus.getBusNumber(), 
-                bus.getLineCode(), // We still publish the short code for frontend display
-                lat, 
-                lon, 
-                speed, 
-                0.0, 
-                LocalDateTime.now()
-        ));
-    }
-
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; 
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c * 1000; 
-    }
-
-    private double[] interpolate(double[] p1, double[] p2, double fraction) {
-        double lat = p1[0] + (p2[0] - p1[0]) * fraction;
-        double lon = p1[1] + (p2[1] - p1[1]) * fraction;
-        return new double[]{lat, lon};
+                bus.getId().toString(), bus.getBusNumber(), bus.getLineCode(),
+                p[0], p[1], ctx.getSpeedKmH(), 0.0,
+                50, ctx.getOccupancy(), ctx.getNextStopName(), calculateEta(ctx, path),
+                LocalDateTime.now()));
     }
 }

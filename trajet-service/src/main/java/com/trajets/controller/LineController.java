@@ -22,13 +22,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class LineController {
-    
+
     private final LineService lineService;
     private final LineRepository lineRepository;
     private final RouteRepository routeRepository;
     private final RouteStopRepository routeStopRepository;
     private final StopRepository stopRepository;
-    
+
     /**
      * GET /api/lines - Get all lines
      */
@@ -36,7 +36,7 @@ public class LineController {
     public List<Line> getAllLines() {
         return lineService.getAllLines();
     }
-    
+
     /**
      * GET /api/lines/{ref} - Get line by ref (e.g., "32H")
      */
@@ -46,7 +46,7 @@ public class LineController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * GET /api/lines/{ref}/routes - Get all routes for a line
      * Returns both GOING and RETURN directions
@@ -61,17 +61,18 @@ public class LineController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * GET /api/routes/{routeId} - Get specific route details
      */
     @GetMapping("/routes/{routeId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Route> getRoute(@PathVariable Long routeId) {
         return routeRepository.findById(routeId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * GET /api/routes/{routeId}/stops - Get ordered stops for a route
      */
@@ -81,9 +82,9 @@ public class LineController {
         if (!routeRepository.existsById(routeId)) {
             return ResponseEntity.notFound().build();
         }
-        
+
         List<RouteStop> routeStops = routeStopRepository.findByRouteIdOrderByStopOrder(routeId);
-        
+
         List<Map<String, Object>> result = routeStops.stream()
                 .map(rs -> {
                     Stop stop = rs.getStop();
@@ -97,12 +98,13 @@ public class LineController {
                     return stopInfo;
                 })
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(result);
     }
-    
+
     /**
-     * GET /api/lines/{ref}/complete - Get complete line info with all routes and stops
+     * GET /api/lines/{ref}/complete - Get complete line info with all routes and
+     * stops
      */
     @GetMapping("/{ref}/complete")
     @Transactional(readOnly = true)
@@ -111,9 +113,9 @@ public class LineController {
                 .map(line -> {
                     Map<String, Object> result = new HashMap<>();
                     result.put("line", line);
-                    
+
                     List<Route> routes = routeRepository.findByLineId(line.getId());
-                    
+
                     List<Map<String, Object>> routesWithStops = routes.stream()
                             .map(route -> {
                                 Map<String, Object> routeInfo = new HashMap<>();
@@ -121,10 +123,10 @@ public class LineController {
                                 routeInfo.put("name", route.getName());
                                 routeInfo.put("direction", route.getDirection());
                                 routeInfo.put("geometry", route.getGeometry());
-                                
+
                                 List<RouteStop> stops = routeStopRepository
                                         .findByRouteIdOrderByStopOrder(route.getId());
-                                
+
                                 List<Map<String, Object>> stopList = stops.stream()
                                         .map(rs -> {
                                             Stop stop = rs.getStop();
@@ -137,12 +139,12 @@ public class LineController {
                                             return stopInfo;
                                         })
                                         .collect(Collectors.toList());
-                                
+
                                 routeInfo.put("stops", stopList);
                                 return routeInfo;
                             })
                             .collect(Collectors.toList());
-                    
+
                     result.put("routes", routesWithStops);
                     return ResponseEntity.ok(result);
                 })

@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,17 +14,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaToWebSocketBridge {
-
     private final GpsWebSocketHandler webSocketHandler;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "bus.location.updates", groupId = "ws-bridge")
-    public void bridgeLocationToWebSocket(String message) { // Accept String
+    public void bridgeLocationToWebSocket(String message) {
         try {
-            // 1. Manually parse the incoming JSON String
             BusLocationEvent event = objectMapper.readValue(message, BusLocationEvent.class);
-
-            // 2. Format for Frontend
+            
             Map<String, Object> gpsData = new HashMap<>();
             gpsData.put("busId", event.getBusId());
             gpsData.put("busMatricule", event.getBusNumber());
@@ -33,17 +29,18 @@ public class KafkaToWebSocketBridge {
             gpsData.put("latitude", event.getLatitude());
             gpsData.put("longitude", event.getLongitude());
             gpsData.put("speed", event.getSpeed());
-            gpsData.put("heading", event.getHeading());
+            
+            // Metadata for Frontend
+            gpsData.put("capacity", event.getCapacity());
+            gpsData.put("occupancy", event.getOccupancy());
+            gpsData.put("nextStop", event.getNextStop());
+            gpsData.put("estimatedArrival", event.getEstimatedArrival());
 
             Map<String, Object> wsMessage = new HashMap<>();
             wsMessage.put("type", "GPS_UPDATE");
             wsMessage.put("payload", gpsData);
 
-            // 3. Broadcast
             webSocketHandler.broadcast(objectMapper.writeValueAsString(wsMessage));
-            
-        } catch (Exception e) {
-            log.error("Error bridging location update: {}", e.getMessage());
-        }
+        } catch (Exception e) { log.error("WS Bridge Error", e); }
     }
 }

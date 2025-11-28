@@ -18,6 +18,18 @@ const TicketHistory = () => {
             try {
                 const res = await axios.get(`${API_BASE_URL}/tickets`, { params: { userId: user.uuid } });
                 const enrichedTickets = await Promise.all(res.data.map(async (t) => {
+                    // Use metadata if available
+                    if (t.metadata && t.metadata.lineRef) {
+                        return {
+                            ...t,
+                            routeInfo: {
+                                name: t.metadata.lineName,
+                                line: { ref: t.metadata.lineRef }
+                            }
+                        };
+                    }
+
+                    // Fallback to API call
                     try {
                         const routeRes = await axios.get(`${TRAJET_API_URL}/lines/routes/${t.trajetId}`);
                         return { ...t, routeInfo: routeRes.data };
@@ -44,7 +56,7 @@ const TicketHistory = () => {
         }
     };
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>;
+    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
 
     return (
         <div className="min-h-screen bg-slate-50 pt-24 pb-12">
@@ -60,7 +72,7 @@ const TicketHistory = () => {
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
                                 <Calendar className="w-3 h-3" /> {new Date(ticket.createdAt).toLocaleDateString()}
-                                <Clock className="w-3 h-3 ml-2" /> {new Date(ticket.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                <Clock className="w-3 h-3 ml-2" /> {new Date(ticket.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div className="flex justify-between items-center pt-3 border-t border-slate-50">
                                 <div className="text-lg font-bold text-slate-900">{ticket.price?.amount / 100} <span className="text-xs font-normal text-slate-400">{ticket.price?.currency}</span></div>

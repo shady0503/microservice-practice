@@ -18,5 +18,12 @@ public class BusLocationEvent implements Serializable {
     private Double longitude;
     private Double speed;
     private Double heading;
+    
+    // New Metadata
+    private Integer capacity;
+    private Integer occupancy;
+    private String nextStop;
+    private String estimatedArrival;
+    
     private LocalDateTime timestamp;
 }

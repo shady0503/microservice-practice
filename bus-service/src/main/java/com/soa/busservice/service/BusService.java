@@ -172,6 +172,11 @@ public class BusService {
             updatedBus.getLongitude(),
             updatedBus.getSpeed(),
             updatedBus.getHeading(),
+            // FIX: Pass capacity and nulls/defaults for missing simulation data
+            updatedBus.getCapacity(),
+            0,      // Default occupancy (not tracked in simple updates)
+            null,   // nextStop (unknown in simple updates)
+            null,   // estimatedArrival (unknown in simple updates)
             LocalDateTime.now()
         );
         kafkaProducerService.publishLocationUpdate(locationEvent);

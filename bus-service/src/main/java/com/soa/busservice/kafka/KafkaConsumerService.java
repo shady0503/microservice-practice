@@ -34,37 +34,33 @@ public class KafkaConsumerService {
             RouteCreatedEvent event = objectMapper.readValue(payload, RouteCreatedEvent.class);
             log.info("New Route Received: {}", event.getRouteName());
 
-            // 1. Cache Geometry using the FULL name (key for simulator)
             routeCache.cacheRoute(event.getRouteName(), event.getGeometry());
 
-            // 2. Extract clean line code (e.g., "L32H: Name..." -> "L32H")
             String fullRouteName = event.getRouteName();
             String cleanLineCode = fullRouteName.contains(":") 
                     ? fullRouteName.split(":")[0].trim() 
                     : fullRouteName;
 
-            // 3. Deploy Simulation Buses
-            int count = 2; // Buses per route
+            // UPDATE: Increased to 5 buses per route direction
+            int count = 5; 
 
             for (int i = 0; i < count; i++) {
-                // Check to avoid duplicate buses on restart
-                String busNumberPrefix = cleanLineCode + "-BUS-";
-                
-                // Simple check if we already have buses for this line to prevent flooding on restart
-                if (busService.getBusesByLineCode(cleanLineCode).size() >= count) {
-                    continue;
-                }
+                // Use unique prefixes to allow multiple buses per line
+                String busNumber = cleanLineCode + "-BUS-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
 
-                String busNumber = busNumberPrefix + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+                // Skip if we already have enough buses for this line (optional check)
+                if (busService.getBusesByLineCode(cleanLineCode).size() >= (count * 2)) {
+                    // log.info("Enough buses for line {}", cleanLineCode);
+                    // continue; // Commented out to force new simulation buses
+                }
 
                 Bus bus = new Bus();
                 bus.setBusNumber(busNumber);
-                // Store short code in DB for display/grouping
                 bus.setLineCode(cleanLineCode); 
                 bus.setCapacity(50);
                 bus.setStatus(Status.ACTIVE);
                 
-                // Set Random Start Position
+                // Random start position
                 List<double[]> path = routeCache.getPath(fullRouteName);
                 if (path != null && !path.isEmpty()) {
                     int randomStart = random.nextInt(path.size());
@@ -74,9 +70,9 @@ public class KafkaConsumerService {
 
                 try {
                     busService.saveBusWithRetry(bus);
-                    // CRITICAL FIX: Pass the full route name to the simulator so it can find the cached geometry
+                    // Pass full route name to simulator
                     simulator.addBus(bus.getId(), fullRouteName);
-                    log.info("Deployed bus {} on route {} (Ref: {})", busNumber, fullRouteName, cleanLineCode);
+                    log.info("Deployed bus {} on route {}", busNumber, fullRouteName);
                 } catch (Exception ex) {
                     log.warn("Could not deploy bus: {}", ex.getMessage());
                 }

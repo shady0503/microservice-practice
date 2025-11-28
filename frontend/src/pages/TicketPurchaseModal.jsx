@@ -106,9 +106,9 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user, bus }) => {
                                     <div className="flex items-center justify-between border-t border-dashed pt-4">
                                         <span className="font-semibold text-slate-700">Quantity</span>
                                         <div className="flex items-center gap-4 bg-slate-100 rounded-lg p-1">
-                                            <button onClick={() => setQuantity(Math.max(1, q => q - 1))} className="w-8 h-8 rounded-md bg-white font-bold">-</button>
+                                            <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-8 h-8 rounded-md bg-white font-bold">-</button>
                                             <span className="w-6 text-center font-bold">{quantity}</span>
-                                            <button onClick={() => setQuantity(Math.min(10, q => q + 1))} className="w-8 h-8 rounded-md bg-white font-bold">+</button>
+                                            <button onClick={() => setQuantity(q => Math.min(10, q + 1))} className="w-8 h-8 rounded-md bg-white font-bold">+</button>
                                         </div>
                                     </div>
 

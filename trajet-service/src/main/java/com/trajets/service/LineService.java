@@ -1,4 +1,3 @@
-// src/main/java/com/trajets/service/LineService.java
 package com.trajets.service;
 
 import com.trajets.dto.CsvRouteRecord;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,130 +29,75 @@ public class LineService {
     private final RouteEventProducer routeEventProducer;
     
     /**
-     * Import a line by trying multiple route records until finding valid data
-     * Returns true only if successfully imported with valid geometry and stops
+     * Import a line and ALL its associated routes (directions)
+     * "If not return route, use one for both" logic is handled by processing all available records.
      */
     @Transactional
     public boolean importLine(String ref, List<CsvRouteRecord> routeRecords) {
-        log.info("Attempting to import line: {} ({} route options)", ref, routeRecords.size());
+        log.info("Importing line: {} ({} route options)", ref, routeRecords.size());
         
-        OsmRouteData validRouteData = null;
-        CsvRouteRecord usedRecord = null;
+        // 1. Create or Update the Line Entity first (Once per line)
+        Line line = lineRepository.findByRef(ref)
+                .orElseGet(() -> {
+                    Line newLine = new Line();
+                    newLine.setRef(ref);
+                    newLine.setName("Line " + ref);
+                    return lineRepository.save(newLine);
+                });
+
+        // Update metadata from the first record (shared info)
+        if (!routeRecords.isEmpty()) {
+            line.setName(extractLineName(routeRecords.get(0).getName()));
+            line.setUpdatedAt(LocalDateTime.now());
+            line = lineRepository.save(line);
+        }
+
+        // 2. Clear existing routes for this line to ensure a clean, complete import
+        routeRepository.deleteByLineId(line.getId());
         
-        // Try each route record until we find one with valid data
+        int importedRoutesCount = 0;
+        
+        // 3. Process ALL route records to capture both "Going" and "Return"
         for (CsvRouteRecord record : routeRecords) {
-            log.info("  Trying OSM relation: {} - {}", record.getOsmRelationId(), record.getName());
+            log.info("  Processing route option: {} (OSM: {})", record.getName(), record.getOsmRelationId());
             
             try {
-                Optional<OsmRouteData> osmDataOpt = osmImportService.fetchRouteData(
-                        record.getOsmRelationId());
+                Optional<OsmRouteData> osmDataOpt = osmImportService.fetchRouteData(record.getOsmRelationId());
                 
                 if (osmDataOpt.isEmpty()) {
-                    log.warn("  ✗ Relation {} does not exist or failed to fetch", 
-                            record.getOsmRelationId());
+                    log.warn("    ✗ Failed to fetch OSM relation {}", record.getOsmRelationId());
                     continue;
                 }
                 
                 OsmRouteData osmData = osmDataOpt.get();
                 
-                // Validate the data
+                // Validate
                 ValidationResult validation = validateRouteData(osmData);
                 if (!validation.isValid()) {
-                    log.warn("  ✗ Relation {} is invalid: {}", 
-                            record.getOsmRelationId(), validation.getReason());
+                    log.warn("    ✗ Invalid route data: {}", validation.getReason());
                     continue;
                 }
                 
-                // Found valid data!
-                validRouteData = osmData;
-                usedRecord = record;
-                log.info("  ✓ Found valid data in relation: {}", record.getOsmRelationId());
-                break;
+                // Save this specific route direction
+                saveRouteForLine(line, record, osmData);
+                importedRoutesCount++;
+                log.info("    ✓ Imported route: {}", record.getName());
                 
             } catch (Exception e) {
-                log.error("  ✗ Error processing relation {}: {}", 
-                        record.getOsmRelationId(), e.getMessage());
+                log.error("    ✗ Error processing route {}: {}", record.getName(), e.getMessage());
             }
         }
         
-        // If no valid route found, skip this line
-        if (validRouteData == null || usedRecord == null) {
-            log.error("✗ No valid route data found for line: {} (tried {} options)", 
-                    ref, routeRecords.size());
-            return false;
-        }
-        
-        // Import the valid route
-        try {
-            return saveLineAndRoute(ref, usedRecord, validRouteData);
-        } catch (Exception e) {
-            log.error("✗ Failed to save line {}: {}", ref, e.getMessage(), e);
+        if (importedRoutesCount > 0) {
+            log.info("✓ Successfully imported line {} with {} routes", ref, importedRoutesCount);
+            return true;
+        } else {
+            log.error("✗ Failed to import any valid routes for line {}", ref);
             return false;
         }
     }
     
-    /**
-     * Validate that route data is usable
-     */
-    private ValidationResult validateRouteData(OsmRouteData osmData) {
-        // Check geometry exists and is not empty
-        if (osmData.getGeometryGeoJson() == null || osmData.getGeometryGeoJson().trim().isEmpty()) {
-            return ValidationResult.invalid("Geometry is empty");
-        }
-        
-        // Check geometry is valid JSON
-        try {
-            if (!osmData.getGeometryGeoJson().contains("coordinates")) {
-                return ValidationResult.invalid("Geometry missing coordinates");
-            }
-        } catch (Exception e) {
-            return ValidationResult.invalid("Geometry is not valid JSON");
-        }
-        
-        // Check has at least some stops
-        if (osmData.getStops() == null || osmData.getStops().isEmpty()) {
-            return ValidationResult.invalid("No stops found");
-        }
-        
-        // Check stops have valid coordinates
-        long validStops = osmData.getStops().stream()
-                .filter(s -> s.getLatitude() != null && s.getLongitude() != null)
-                .count();
-        
-        if (validStops == 0) {
-            return ValidationResult.invalid("No stops with valid coordinates");
-        }
-        
-        if (validStops < osmData.getStops().size()) {
-            log.warn("  ⚠ Some stops missing coordinates ({}/{})", 
-                    validStops, osmData.getStops().size());
-        }
-        
-        return ValidationResult.valid();
-    }
-    
-    /**
-     * Save the line and route to database
-     */
-    private boolean saveLineAndRoute(String ref, CsvRouteRecord csvRecord, OsmRouteData osmData) {
-        // Create or update Line
-        Line line = lineRepository.findByRef(ref)
-                .orElseGet(() -> {
-                    Line newLine = new Line();
-                    newLine.setRef(ref);
-                    return newLine;
-                });
-        
-        line.setName(extractLineName(csvRecord.getName()));
-        line.setOsmRelationId(csvRecord.getOsmRelationId());
-        line.setUpdatedAt(LocalDateTime.now());
-        line = lineRepository.save(line);
-        
-        log.info("  Line saved: {} (ID: {})", line.getRef(), line.getId());
-        
-        // Delete any existing routes for this line (for re-import)
-        routeRepository.deleteByLineId(line.getId());
-        
+    private void saveRouteForLine(Line line, CsvRouteRecord csvRecord, OsmRouteData osmData) {
         // Create the Route
         Route route = new Route();
         route.setLine(line);
@@ -161,22 +106,12 @@ public class LineService {
         route.setDirection(determineDirection(csvRecord.getName()));
         
         route = routeRepository.save(route);
-        log.info("  Route saved: {} ({}) - ID: {}", 
-                route.getName(), route.getDirection(), route.getId());
         
-        // Publish RouteCreatedEvent
-        RouteCreatedEvent event = new RouteCreatedEvent(route.getId(), route.getName(), route.getDirection(), route.getGeometry());
-        routeEventProducer.publish(event);
-        log.info("  RouteCreatedEvent published for route ID: {}", route.getId());
-
-        // Save stops
-        int savedStops = 0;
+        // Save stops and prepare Event Data
+        List<RouteCreatedEvent.StopInfo> eventStops = new ArrayList<>();
+        
         for (var stopData : osmData.getStops()) {
-            // Skip stops without coordinates
-            if (stopData.getLatitude() == null || stopData.getLongitude() == null) {
-                log.warn("    Skipping stop without coordinates: {}", stopData.getName());
-                continue;
-            }
+            if (stopData.getLatitude() == null || stopData.getLongitude() == null) continue;
             
             Stop stop = findOrCreateStop(stopData);
             
@@ -184,108 +119,72 @@ public class LineService {
             routeStop.setRoute(route);
             routeStop.setStop(stop);
             routeStop.setStopOrder(stopData.getOrder());
-            
             routeStopRepository.save(routeStop);
-            savedStops++;
+            
+            eventStops.add(new RouteCreatedEvent.StopInfo(
+                stop.getName(), 
+                stop.getLatitude(), 
+                stop.getLongitude(), 
+                stopData.getOrder()
+            ));
         }
         
-        log.info("  Stops saved: {} (total in OSM: {})", savedStops, osmData.getStops().size());
-        log.info("✓ Successfully imported line: {}", ref);
-        
-        return true;
+        // Publish Event (Bus Service will listen to this to spawn buses)
+        RouteCreatedEvent event = new RouteCreatedEvent(
+            route.getId(), 
+            route.getName(), 
+            route.getDirection(), 
+            route.getGeometry(),
+            eventStops
+        );
+        routeEventProducer.publish(event);
     }
-    
-    /**
-     * Extract line name without direction
-     */
+
+    private ValidationResult validateRouteData(OsmRouteData osmData) {
+        if (osmData.getGeometryGeoJson() == null || osmData.getGeometryGeoJson().trim().isEmpty()) 
+            return ValidationResult.invalid("Geometry is empty");
+        if (osmData.getStops() == null || osmData.getStops().isEmpty()) 
+            return ValidationResult.invalid("No stops found");
+        return ValidationResult.valid();
+    }
+
     private String extractLineName(String fullName) {
-        if (fullName.contains(":")) {
-            return fullName.split(":")[0].trim();
-        }
-        return fullName;
+        return fullName.contains(":") ? fullName.split(":")[0].trim() : fullName;
     }
-    
-    /**
-     * Determine direction from route name
-     */
+
     private String determineDirection(String routeName) {
         String lower = routeName.toLowerCase();
-        
-        if (lower.contains("retour") || lower.contains("return") || lower.contains("←")) {
-            return "RETURN";
-        }
-        
-        if (lower.contains("circular") || lower.contains("circulaire")) {
-            return "CIRCULAR";
-        }
-        
+        if (lower.contains("retour") || lower.contains("return") || lower.contains("←")) return "RETURN";
+        if (lower.contains("circular") || lower.contains("circulaire")) return "CIRCULAR";
         return "GOING";
     }
     
-    /**
-     * Find or create stop
-     */
     private Stop findOrCreateStop(com.trajets.dto.OsmStopData stopData) {
-        // Try by OSM node ID
         if (stopData.getNodeId() != null) {
             Optional<Stop> existing = stopRepository.findByOsmNodeId(stopData.getNodeId());
-            if (existing.isPresent()) {
-                return existing.get();
-            }
+            if (existing.isPresent()) return existing.get();
         }
-        
-        // Try by coordinates (within ~10m)
-        Optional<Stop> existing = stopRepository.findFirstByLatitudeAndLongitude(
-                stopData.getLatitude(), stopData.getLongitude());
-        
-        if (existing.isPresent()) {
-            return existing.get();
-        }
-        
-        // Create new
-        Stop stop = new Stop();
-        stop.setName(stopData.getName());
-        stop.setLatitude(stopData.getLatitude());
-        stop.setLongitude(stopData.getLongitude());
-        stop.setOsmNodeId(stopData.getNodeId());
-        
-        return stopRepository.save(stop);
+        return stopRepository.findFirstByLatitudeAndLongitude(stopData.getLatitude(), stopData.getLongitude())
+                .orElseGet(() -> {
+                    Stop s = new Stop();
+                    s.setName(stopData.getName());
+                    s.setLatitude(stopData.getLatitude());
+                    s.setLongitude(stopData.getLongitude());
+                    s.setOsmNodeId(stopData.getNodeId());
+                    return stopRepository.save(s);
+                });
     }
     
-    public List<Line> getAllLines() {
-        return lineRepository.findAll();
-    }
-    
-    public Optional<Line> getLineByRef(String ref) {
-        return lineRepository.findByRef(ref);
-    }
-    
-    /**
-     * Validation result helper class
-     */
+    public List<Line> getAllLines() { return lineRepository.findAll(); }
+    public Optional<Line> getLineByRef(String ref) { return lineRepository.findByRef(ref); }
+
     private static class ValidationResult {
         private final boolean valid;
         private final String reason;
-        
-        private ValidationResult(boolean valid, String reason) {
-            this.valid = valid;
-            this.reason = reason;
-        }
-        
-        static ValidationResult valid() {
-            return new ValidationResult(true, null);
-        }
-        
-        static ValidationResult invalid(String reason) {
-            return new ValidationResult(false, reason);
-        }
-        
-        boolean isValid() {
-            return valid;
-        }
-        
-        String getReason() {
-            return reason;
-        }
+        private ValidationResult(boolean valid, String reason) { this.valid = valid; this.reason = reason; }
+        static ValidationResult valid() { return new ValidationResult(true, null); }
+        static ValidationResult invalid(String reason) { return new ValidationResult(false, reason); }
+        boolean isValid() { return valid; }
+        String getReason() { return reason; }
     }
 }

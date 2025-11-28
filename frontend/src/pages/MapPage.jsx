@@ -121,7 +121,7 @@ const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Ico
     };
 
     return (
-        <div className="relative z-20" ref={wrapperRef}>
+        <div className="relative z-[5000]" ref={wrapperRef}>
             <div className="relative">
                 {Icon && <Icon className="absolute left-3 top-3 h-4 w-4 text-slate-400" />}
                 <input
@@ -136,7 +136,7 @@ const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Ico
             </div>
             
             {isOpen && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-100 max-h-60 overflow-y-auto py-1 z-[5000]">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-100 max-h-60 overflow-y-auto py-1 z-[5001]">
                     {suggestions.map((item, idx) => (
                         <button 
                             key={idx} 
@@ -174,19 +174,67 @@ const MapPage = () => {
 
     const wsRef = useRef(null);
 
-    // Find nearest stop to a given point
+    // Calculate distance between two points
+    const getDistance = (p1, p2) => {
+        return L.latLng(p1.lat || p1.latitude, p1.lng || p1.longitude)
+            .distanceTo(L.latLng(p2.lat || p2.latitude, p2.lng || p2.longitude));
+    };
+
     const findNearestStop = (point, stops) => {
         if (!point || !stops || stops.length === 0) return null;
         let nearest = null;
         let minDist = Infinity;
         stops.forEach(stop => {
-            const d = Math.sqrt(Math.pow(stop.latitude - point.lat, 2) + Math.pow(stop.longitude - point.lng, 2));
+            const d = getDistance(point, stop);
             if (d < minDist) { minDist = d; nearest = stop; }
         });
         return nearest;
     };
 
-    // CHANGED: Return a simple direct cut-line (straight line)
+    // --- ETA CALCULATION ENGINE ---
+    const calculateDynamicEta = (bus) => {
+        // 1. Fallback if no start point selected
+        const defaultEta = bus.estimatedArrival ? `Next Stop: ${bus.estimatedArrival}` : 'Locating...';
+        if (!searchPoints.start || !routeStops || routeStops.length === 0) return defaultEta;
+
+        // 2. Find User's Stop
+        const userStartStop = findNearestStop(searchPoints.start, routeStops);
+        if (!userStartStop) return defaultEta;
+
+        // 3. Find Indices (with string normalization for safety)
+        const cleanName = (name) => name?.toLowerCase().trim() || "";
+        
+        const nextStopIndex = routeStops.findIndex(s => cleanName(s.name) === cleanName(bus.nextStop));
+        const userStopIndex = routeStops.findIndex(s => s.id === userStartStop.id);
+
+        // If we can't match the next stop name, we can't calculate
+        if (nextStopIndex === -1 || userStopIndex === -1) return defaultEta;
+
+        // 4. Determine Status
+        if (userStopIndex < nextStopIndex) return "Already Gone";
+        if (userStopIndex === nextStopIndex) return bus.estimatedArrival || "< 1 min";
+
+        // 5. Calculate Distance (Next Bus Stop -> User Stop)
+        let distanceMeters = 0;
+        for (let i = nextStopIndex; i < userStopIndex; i++) {
+            distanceMeters += getDistance(routeStops[i], routeStops[i+1]);
+        }
+
+        // 6. Time = Distance / Speed + Time to Next Stop
+        const speedKmH = bus.speed || 30; 
+        const speedMs = Math.max(1, speedKmH / 3.6);
+        const travelMinutes = Math.ceil((distanceMeters / speedMs) / 60);
+
+        // Parse "5 min" or "< 1 min" from string
+        let baseMinutes = 0;
+        if (bus.estimatedArrival && bus.estimatedArrival.includes('min')) {
+            baseMinutes = parseInt(bus.estimatedArrival) || 0;
+        }
+
+        const total = baseMinutes + travelMinutes;
+        return `${total} min`;
+    };
+
     const fetchWalkingRoute = (start, end) => {
         if (!start || !end) return [];
         return [[start.lat, start.lng], [end.lat, end.lng]];
@@ -243,29 +291,13 @@ const MapPage = () => {
                 setRouteGeometry(matchedRoute.geometry);
                 setRouteStops(matchedRoute.stops || []);
 
-                // Calculate Direct "Cut-Line" Paths to Nearest Stops
                 if (matchedRoute.stops && matchedRoute.stops.length > 0) {
                     const nearestStart = findNearestStop(searchPoints.start, matchedRoute.stops);
                     const nearestEnd = findNearestStop(searchPoints.end, matchedRoute.stops);
                     
                     const paths = [];
-                    // Start -> Nearest Stop
-                    if (nearestStart) {
-                        // Direct line function is essentially synchronous now, but keeping structure
-                        const path1 = fetchWalkingRoute(
-                            searchPoints.start, 
-                            { lat: nearestStart.latitude, lng: nearestStart.longitude }
-                        );
-                        paths.push(path1);
-                    }
-                    // Nearest End Stop -> Destination
-                    if (nearestEnd) {
-                        const path2 = fetchWalkingRoute(
-                            { lat: nearestEnd.latitude, lng: nearestEnd.longitude }, 
-                            searchPoints.end
-                        );
-                        paths.push(path2);
-                    }
+                    if (nearestStart) paths.push(fetchWalkingRoute(searchPoints.start, { lat: nearestStart.latitude, lng: nearestStart.longitude }));
+                    if (nearestEnd) paths.push(fetchWalkingRoute({ lat: nearestEnd.latitude, lng: nearestEnd.longitude }, searchPoints.end));
                     setWalkingPaths(paths);
                 }
             }
@@ -287,7 +319,10 @@ const MapPage = () => {
                     const payload = message.payload;
                     const wsRef = (payload.lineNumber || "").split(':')[0].trim();
                     const routeRef = selectedRoute.lineRef;
-                    if (wsRef === routeRef || wsRef === `L${routeRef}` || payload.lineNumber?.includes(routeRef)) {
+                    
+                    const isMatch = (wsRef === routeRef) || (wsRef === `L${routeRef}`);
+                    
+                    if (isMatch) {
                         setBusPositions(prev => ({ ...prev, [payload.busId]: payload }));
                     }
                 }
@@ -435,7 +470,9 @@ const MapPage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <div className="font-bold text-sm text-slate-700">{bus.estimatedArrival || 'N/A'}</div>
+                                                        <div className={`font-bold text-sm ${calculateDynamicEta(bus) === 'Already Gone' ? 'text-red-600' : 'text-slate-700'}`}>
+                                                            {calculateDynamicEta(bus)}
+                                                        </div>
                                                         <div className="text-[10px] text-slate-400 uppercase">ETA</div>
                                                     </div>
                                                 </div>
@@ -495,7 +532,7 @@ const MapPage = () => {
                                 <div className="grid grid-cols-2 gap-2 text-xs text-left bg-slate-50 p-2 rounded mb-2">
                                     <span className="text-slate-500">Speed:</span> <span className="font-bold">{bus.speed?.toFixed(0)} km/h</span>
                                     <span className="text-slate-500">Seats:</span> <span className={`font-bold ${getOccupancyColor(bus.occupancy, bus.capacity)}`}>{bus.occupancy}/{bus.capacity}</span>
-                                    <span className="text-slate-500">ETA:</span> <span className="font-bold text-blue-600">{bus.estimatedArrival}</span>
+                                    <span className="text-slate-500">ETA:</span> <span className="font-bold text-blue-600">{calculateDynamicEta(bus)}</span>
                                 </div>
                                 <Button size="sm" className="w-full" onClick={() => handleBuyTicket(bus)}>Buy Ticket</Button>
                             </div>
