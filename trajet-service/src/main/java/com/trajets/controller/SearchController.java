@@ -134,12 +134,11 @@ public class SearchController {
                     result.put("duration", estimatedMinutes + " min");
                     result.put("estimatedDuration", estimatedMinutes + " minutes");
 
-                    // Fixed price for now (can be made dynamic based on distance/stops)
-                    double basePrice = 6.0; // Base price in MAD
-                    double pricePerStop = 0.5;
-                    double totalPrice = basePrice + (stopsCount * pricePerStop);
-                    result.put("price", Math.round(totalPrice * 100.0) / 100.0);
-                    result.put("fare", Math.round(totalPrice * 100.0) / 100.0);
+                    // FIX: Standardized Flat Rate
+                    double totalPrice = 5.0; // Fixed 5 DH price
+                    
+                    result.put("price", totalPrice);
+                    result.put("fare", totalPrice);
 
                     result.put("stops", stopsCount);
                     result.put("originStop", nearestOriginStop.getName());

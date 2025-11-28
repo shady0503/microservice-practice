@@ -49,29 +49,48 @@ public class BusMovementSimulator {
         private LocalDateTime stateEntryTime = LocalDateTime.now();
         private double speedKmH = 40.0; // Default speed
         private boolean initialized = false; // Flag to randomize start position once
+        private String routeKey; // The exact key used in RouteGeometryCache
     }
 
     @PostConstruct
     public void loadActiveBuses() {
+        // Note: For persistent buses, we might not know the full route name on startup 
+        // if it's not stored in the DB. In a real app, Bus entity should store routeName.
+        // For this fix, we primarily rely on the dynamic addition via KafkaConsumerService.
         busService.getBusesByStatus(Status.ACTIVE).forEach(this::addBus);
     }
 
     public void addBus(Bus bus) {
-        addBus(bus.getId());
+        addBus(bus.getId(), bus.getLineCode()); // Fallback to lineCode if name unknown
     }
 
     public void addBus(BusResponse bus) {
-        addBus(bus.getId());
+        addBus(bus.getId(), bus.getLineCode());
     }
     
     public void addBus(UUID busId) {
+        // Default behavior (might fail if key doesn't match cache, but needed for interface compat)
+        // Ideally, we fetch the bus to get the lineCode
+        try {
+            BusResponse bus = busService.getBusById(busId);
+            addBus(busId, bus.getLineCode());
+        } catch (Exception e) {
+            log.warn("Could not load bus {} for simulation", busId);
+        }
+    }
+
+    /**
+     * Add a bus to the simulator with a specific route key for geometry lookup
+     */
+    public void addBus(UUID busId, String routeKey) {
         if (busContexts.containsKey(busId)) return;
         
         SimulationContext ctx = new SimulationContext();
+        ctx.setRouteKey(routeKey);
         // Randomize initial speed slightly for realism (30 - 50 km/h)
         ctx.setSpeedKmH(30 + random.nextDouble() * 20);
         busContexts.put(busId, ctx);
-        log.info("Bus {} added to simulation engine", busId);
+        log.info("Bus {} added to simulation engine on route '{}'", busId, routeKey);
     }
 
     @Scheduled(fixedRate = 1000) // 1 Hz Tick (Every 1 second)
@@ -79,9 +98,17 @@ public class BusMovementSimulator {
         busContexts.forEach((busId, ctx) -> {
             try {
                 BusResponse bus = busService.getBusById(busId);
-                List<double[]> path = routeCache.getPath(bus.getLineCode());
+                
+                // Use the stored routeKey to fetch geometry, not just the short lineCode
+                List<double[]> path = routeCache.getPath(ctx.getRouteKey());
+
+                // Fallback: try lineCode if routeKey failed (legacy support)
+                if (path == null || path.isEmpty()) {
+                    path = routeCache.getPath(bus.getLineCode());
+                }
 
                 if (path == null || path.isEmpty()) {
+                    // log.debug("No path found for bus {} (Key: {})", bus.getBusNumber(), ctx.getRouteKey());
                     return;
                 }
 
@@ -106,7 +133,8 @@ public class BusMovementSimulator {
                 }
 
             } catch (Exception e) {
-                busContexts.remove(busId);
+                log.error("Error in simulation tick for bus {}", busId, e);
+                // Don't remove immediately to allow transient errors recovery
             }
         });
     }
@@ -118,7 +146,7 @@ public class BusMovementSimulator {
         // End of route reached? -> RESTING
         if (nextIndex >= path.size()) {
             enterState(ctx, SimState.RESTING);
-            log.info("Bus {} reached terminus. Entering RESTING state.", bus.getBusNumber());
+            // log.info("Bus {} reached terminus. Entering RESTING state.", bus.getBusNumber());
             return;
         }
 
@@ -146,7 +174,7 @@ public class BusMovementSimulator {
             ctx.setProgressToNextNode(0.0);
 
             // Check for Stop (heuristic)
-            if (routeCache.isStop(bus.getLineCode(), nextIndex) && nextIndex != path.size() - 1) {
+            if (routeCache.isStop(ctx.getRouteKey(), nextIndex) && nextIndex != path.size() - 1) {
                 enterState(ctx, SimState.BOARDING);
                 publishUpdate(bus, p2[0], p2[1], 0.0); 
                 return;
@@ -170,11 +198,12 @@ public class BusMovementSimulator {
     private void handleRestingState(BusResponse bus, SimulationContext ctx) {
         long minutesElapsed = ChronoUnit.MINUTES.between(ctx.getStateEntryTime(), LocalDateTime.now());
 
-        if (minutesElapsed >= 10) {
+        // Reduced resting time for demo purposes (1 minute instead of 10)
+        if (minutesElapsed >= 1) {
             ctx.setCurrentNodeIndex(0);
             ctx.setProgressToNextNode(0.0);
             enterState(ctx, SimState.MOVING);
-            log.info("Bus {} finished resting. Restarting route {}.", bus.getBusNumber(), bus.getLineCode());
+            log.info("Bus {} finished resting. Restarting route.", bus.getBusNumber());
         }
     }
 
@@ -187,7 +216,7 @@ public class BusMovementSimulator {
         producer.publishLocationUpdate(new BusLocationEvent(
                 bus.getId().toString(), 
                 bus.getBusNumber(), 
-                bus.getLineCode(),
+                bus.getLineCode(), // We still publish the short code for frontend display
                 lat, 
                 lon, 
                 speed, 

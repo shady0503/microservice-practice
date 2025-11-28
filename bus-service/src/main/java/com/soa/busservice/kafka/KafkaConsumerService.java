@@ -59,7 +59,7 @@ public class KafkaConsumerService {
 
                 Bus bus = new Bus();
                 bus.setBusNumber(busNumber);
-                // CRITICAL: Use clean code "L7" instead of full name for matching
+                // Store short code in DB for display/grouping
                 bus.setLineCode(cleanLineCode); 
                 bus.setCapacity(50);
                 bus.setStatus(Status.ACTIVE);
@@ -74,7 +74,8 @@ public class KafkaConsumerService {
 
                 try {
                     busService.saveBusWithRetry(bus);
-                    simulator.addBus(bus.getId());
+                    // CRITICAL FIX: Pass the full route name to the simulator so it can find the cached geometry
+                    simulator.addBus(bus.getId(), fullRouteName);
                     log.info("Deployed bus {} on route {} (Ref: {})", busNumber, fullRouteName, cleanLineCode);
                 } catch (Exception ex) {
                     log.warn("Could not deploy bus: {}", ex.getMessage());

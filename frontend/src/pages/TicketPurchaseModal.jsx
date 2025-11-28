@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from '../config/api.config';
 import axios from 'axios';
 
-const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
+const TicketPurchaseModal = ({ isOpen, onClose, route, user, bus }) => {
     const [step, setStep] = useState('SUMMARY'); // SUMMARY, PROCESSING, PAYMENT, SUCCESS
     const [ticket, setTicket] = useState(null);
     const [error, setError] = useState(null);
@@ -23,14 +23,16 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
         try {
             const idempotencyKey = uuidv4();
             const response = await axios.post(`${API_BASE_URL}/tickets`, {
-                userId: user.uuid, 
+                userId: user.uuid,
                 trajetId: route.routeId,
                 quantity: quantity,
-                metadata: { 
-                    lineRef: route.lineRef, 
+                metadata: {
+                    lineRef: route.lineRef,
                     lineName: route.lineName,
                     origin: route.originStop,
-                    destination: route.destinationStop
+                    destination: route.destinationStop,
+                    busId: bus?.busId,
+                    busMatricule: bus?.busMatricule
                 }
             }, {
                 headers: { 'Idempotency-Key': idempotencyKey }
@@ -65,7 +67,7 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
 
     return (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
@@ -83,7 +85,7 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
                 <div className="p-6 overflow-y-auto">
                     <AnimatePresence mode='wait'>
                         {step === 'SUMMARY' && (
-                            <motion.div key="summary" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+                            <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                 <div className="space-y-6">
                                     <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-bl-full opacity-50" />
@@ -93,14 +95,20 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
                                             <span className="text-base font-normal text-slate-500">/ {route.direction}</span>
                                         </div>
                                         <div className="text-sm text-slate-600 mt-2 font-medium">{route.lineName}</div>
+                                        {bus && (
+                                            <div className="mt-3 pt-3 border-t border-blue-200/50 flex items-center gap-2">
+                                                <div className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">BUS</div>
+                                                <span className="font-bold text-slate-700">{bus.busMatricule}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center justify-between border-t border-dashed pt-4">
                                         <span className="font-semibold text-slate-700">Quantity</span>
                                         <div className="flex items-center gap-4 bg-slate-100 rounded-lg p-1">
-                                            <button onClick={() => setQuantity(Math.max(1, q => q-1))} className="w-8 h-8 rounded-md bg-white font-bold">-</button>
+                                            <button onClick={() => setQuantity(Math.max(1, q => q - 1))} className="w-8 h-8 rounded-md bg-white font-bold">-</button>
                                             <span className="w-6 text-center font-bold">{quantity}</span>
-                                            <button onClick={() => setQuantity(Math.min(10, q => q+1))} className="w-8 h-8 rounded-md bg-white font-bold">+</button>
+                                            <button onClick={() => setQuantity(Math.min(10, q => q + 1))} className="w-8 h-8 rounded-md bg-white font-bold">+</button>
                                         </div>
                                     </div>
 
@@ -126,12 +134,12 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
                         )}
 
                         {step === 'PAYMENT' && (
-                            <motion.div key="payment" initial={{opacity: 0}} animate={{opacity: 1}}>
+                            <motion.div key="payment" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                 <div className="text-center mb-8">
                                     <div className="text-sm text-slate-500 uppercase tracking-wide font-bold">Amount Due</div>
                                     <div className="text-4xl font-bold text-slate-900 mt-2">{ticket?.price?.amount / 100} MAD</div>
                                 </div>
-                                
+
                                 <div className="p-4 border-2 border-primary bg-primary/5 rounded-xl flex items-center gap-4 mb-8">
                                     <CreditCard className="w-6 h-6 text-primary" />
                                     <div className="flex-1 font-bold text-slate-800">Mock Card **** 4242</div>
@@ -143,16 +151,16 @@ const TicketPurchaseModal = ({ isOpen, onClose, route, user }) => {
                         )}
 
                         {step === 'SUCCESS' && (
-                            <motion.div key="success" initial={{scale: 0.8, opacity: 0}} animate={{scale: 1, opacity: 1}} className="text-center">
+                            <motion.div key="success" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
                                 <div className="flex justify-center mb-6">
                                     <CheckCircle className="w-20 h-20 text-green-500" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-800 mb-2">Payment Successful!</h3>
-                                
+
                                 <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-slate-200 inline-block mb-6">
                                     <QRCodeSVG value={ticket?.qrCodeData || ticket?.id} size={150} />
                                 </div>
-                                
+
                                 <Button onClick={onClose} variant="outline" className="w-full">Close</Button>
                             </motion.div>
                         )}

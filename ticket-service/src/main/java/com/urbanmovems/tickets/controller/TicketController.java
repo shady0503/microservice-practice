@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,11 +42,15 @@ public class TicketController {
         if (userId != null) {
             tickets = ticketService.getTicketsByUserId(userId);
         } else if (status != null) {
-            tickets = ticketService.getTicketsByStatus(status);
+            // FIX: Prevent showing all tickets by status to unauthenticated users. 
+            // In a real app, verify Admin role here.
+            // For now, if no userId is provided, we return empty list for privacy.
+            return ResponseEntity.ok(Collections.emptyList());
         } else if (trajetId != null) {
-            tickets = ticketService.getTicketsByTrajetId(trajetId);
+             return ResponseEntity.ok(Collections.emptyList());
         } else {
-            tickets = ticketService.getAllTickets();
+            // FIX: Do not return ALL tickets if no filter provided
+            return ResponseEntity.ok(Collections.emptyList());
         }
 
         return ResponseEntity.ok(tickets);
