@@ -175,6 +175,53 @@ services:
       - urbanmove-network
     restart: unless-stopped
 
+  # PostgreSQL for Ticket Service
+  postgres-ticket:
+    image: postgres:15-alpine
+    container_name: postgres-ticket
+    environment:
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: ticket_user
+      POSTGRES_PASSWORD: ticket_pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-ticket-data:/var/lib/postgresql/data
+    networks:
+      - urbanmove-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticket_user -d ticketdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ticket Service
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: ticket-service
+    depends_on:
+      postgres-ticket:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      trajet-service:
+        condition: service_started
+    ports:
+      - "8083:8080"
+    environment:
+      POSTGRES_HOST: postgres-ticket
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: ticket_user
+      POSTGRES_PASSWORD: ticket_pass
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TRAJET_SERVICE_URL: http://trajet-service:8081
+    networks:
+      - urbanmove-network
+    restart: unless-stopped
+
 networks:
   urbanmove-network:
     driver: bridge
@@ -183,3 +230,4 @@ volumes:
   postgres-bus-data:
   postgres-trajet-data:
   postgres-user-data:
+  postgres-ticket-data:
