@@ -42,8 +42,10 @@ const SignupPage = () => {
                 phoneNumber: formData.phoneNumber,
                 password: formData.password
             });
-            navigate('/login');
+            // Redirect to Dashboard immediately after successful signup
+            navigate('/dashboard');
         } catch (err) {
+            console.error("Signup error:", err);
             setError(err.message || "Échec de l'inscription");
         } finally {
             setIsLoading(false);
@@ -52,6 +54,7 @@ const SignupPage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4">
+            {/* Same UI code as before... */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl opacity-40 animate-pulse" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl opacity-30" />

@@ -19,7 +19,8 @@ const LoginPage = () => {
         setIsLoading(true);
         try {
             await login({ email, password });
-            navigate('/');
+            // Redirect to Dashboard immediately
+            navigate('/dashboard');
         } catch (err) {
             setError(err.message || 'Identifiants incorrects');
         } finally {

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import * as authService from '../services/auth.service';
+import { getStableUuid } from '../lib/uuidHelper';
 
 export const AuthContext = createContext();
 
@@ -8,32 +9,61 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const currentUser = authService.getCurrentUser();
-        if (currentUser) {
-            setUser(currentUser);
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+            try {
+                const parsedUser = JSON.parse(userStr);
+                // Ensure we have the stable UUID for ticket service interactions
+                const userId = parsedUser.id || (parsedUser.user && parsedUser.user.id);
+                const enrichedUser = {
+                    ...parsedUser,
+                    uuid: getStableUuid(userId)
+                };
+                setUser(enrichedUser);
+            } catch (e) {
+                console.error("Failed to parse user from local storage", e);
+                localStorage.removeItem("user");
+            }
         }
         setLoading(false);
     }, []);
 
+    const handleAuthSuccess = (response) => {
+        if (response) {
+            // Extract the actual user object properties
+            // The backend returns { accessToken, refreshToken, user: { id, email... } }
+            const userData = response.user || response;
+            const uuid = getStableUuid(userData.id);
+            
+            const enrichedUser = {
+                ...response,
+                uuid
+            };
+            
+            localStorage.setItem("user", JSON.stringify(enrichedUser));
+            localStorage.setItem("accessToken", response.accessToken); // Store token separately if needed for interceptors
+            setUser(enrichedUser);
+            return enrichedUser;
+        }
+        return null;
+    };
+
     const login = async (credentials) => {
         const response = await authService.login(credentials);
-        if (response) {
-            localStorage.setItem("user", JSON.stringify(response));
-            // Assuming response contains token, if it's separate, handle it.
-            // For now, assuming response is the user object or contains token + user
-            // If response has token: localStorage.setItem("token", response.token);
-            setUser(response);
-        }
-        return response;
+        return handleAuthSuccess(response);
     };
 
     const register = async (userData) => {
-        return await authService.register(userData);
+        const response = await authService.register(userData);
+        // Auto-login after registration
+        return handleAuthSuccess(response);
     };
 
     const logout = () => {
         authService.logout();
         setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
     };
 
     return (
