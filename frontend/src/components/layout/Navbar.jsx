@@ -13,6 +13,17 @@ const Navbar = () => {
         navigate('/');
     };
 
+    // Helper to get display name
+    const getDisplayName = () => {
+        if (!user) return "";
+        // Check for UserResponse structure from backend
+        if (user.user) {
+            return user.user.firstName || user.user.email;
+        }
+        // Fallback for direct user object
+        return user.firstName || user.email;
+    };
+
     return (
         <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border/40">
             <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
@@ -24,21 +35,25 @@ const Navbar = () => {
                     {user ? (
                         <>
                             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                <span>{user.username || user.email}</span>
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <User className="h-4 w-4 text-primary" />
+                                </div>
+                                <span className="hidden sm:inline-block">
+                                    {getDisplayName()}
+                                </span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10">
                                 <LogOut className="h-4 w-4" />
-                                Logout
+                                <span className="hidden sm:inline">Déconnexion</span>
                             </Button>
                         </>
                     ) : (
                         <>
                             <Link to="/login">
-                                <Button variant="ghost" size="sm">Login</Button>
+                                <Button variant="ghost" size="sm">Se connecter</Button>
                             </Link>
                             <Link to="/signup">
-                                <Button size="sm" className="rounded-full">Sign Up</Button>
+                                <Button size="sm" className="rounded-full">Créer un compte</Button>
                             </Link>
                         </>
                     )}

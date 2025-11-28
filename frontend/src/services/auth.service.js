@@ -1,44 +1,60 @@
 import { AUTH_API_URL } from "../config/api.config";
 
 export const login = async (credentials) => {
-    const response = await fetch(`${AUTH_API_URL}/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-    });
+    try {
+        const response = await fetch(`${AUTH_API_URL}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(credentials),
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || data.error || "Login failed");
+        }
+
+        return data;
+    } catch (error) {
+        throw error;
     }
-
-    return response.json();
 };
 
 export const register = async (userData) => {
-    const response = await fetch(`${AUTH_API_URL}/register`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-    });
+    try {
+        const response = await fetch(`${AUTH_API_URL}/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(userData),
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Handle Spring Boot validation errors (map) or simple error messages
+            if (data.status === 400 && typeof data === 'object') {
+                 // Convert field errors to a single string if necessary, or pass object
+                 throw new Error(Object.values(data).join(', ') || "Registration failed");
+            }
+            throw new Error(data.message || "Registration failed");
+        }
+
+        return data;
+    } catch (error) {
+        throw error;
     }
-
-    return response.json();
 };
 
 export const logout = () => {
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
 };
 
 export const getCurrentUser = () => {
-    return JSON.parse(localStorage.getItem("user"));
+    const userStr = localStorage.getItem("user");
+    if (userStr) return JSON.parse(userStr);
+    return null;
 };
