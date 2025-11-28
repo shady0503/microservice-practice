@@ -1,0 +1,636 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.urbanmovems:ticket-service >-------------------
+[INFO] Building Ticket Purchase Service 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ ticket-service ---
+[INFO] Deleting C:\Users\achra\Desktop\Software-Oriented-Application\ticket-service\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ ticket-service ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ ticket-service ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 40 source files with javac [debug release 17] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/TicketServiceImpl.java:[31,8] duplicate class: com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[24,24] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.dto.response.PriceDTO
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[25,30] cannot find symbol
+  symbol:   method getAmount()
+  location: variable price of type com.urbanmovems.tickets.model.Price
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[26,32] cannot find symbol
+  symbol:   method getCurrency()
+  location: variable price of type com.urbanmovems.tickets.model.Price
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/model/Price.java:[29,16] constructor Price in class com.urbanmovems.tickets.model.Price cannot be applied to given types;
+  required: no arguments
+  found:    int,java.lang.String
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/model/Price.java:[44,16] constructor Price in class com.urbanmovems.tickets.model.Price cannot be applied to given types;
+  required: no arguments
+  found:    int,java.lang.String
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[23,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[27,13] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[36,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[40,13] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[40,19] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[42,60] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[49,30] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.dto.response.TicketResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[50,27] cannot find symbol
+  symbol:   method getId()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[51,31] cannot find symbol
+  symbol:   method getUserId()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[52,33] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[53,33] cannot find symbol
+  symbol:   method getQuantity()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[54,31] cannot find symbol
+  symbol:   method getStatus()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[55,30] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[55,58] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[57,33] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[57,61] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[58,31] cannot find symbol
+  symbol:   method getPaidAt()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[59,34] cannot find symbol
+  symbol:   method getExpiresAt()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[60,34] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,70] cannot find symbol
+  symbol:   method getUserId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,91] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[55,71] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[56,79] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[60,83] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[62,57] cannot find symbol
+  symbol:   method getQuantity()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[65,20] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[68,52] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[70,17] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[75,31] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[76,32] cannot find symbol
+  symbol:   method getUserId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[77,34] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[78,34] cannot find symbol
+  symbol:   method getQuantity()
+  location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[86,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[86,72] cannot find symbol
+  symbol:   method getId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[89,58] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.event.TicketPurchasedEvent
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[90,38] cannot find symbol
+  symbol:   method getId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[91,36] cannot find symbol
+  symbol:   method getUserId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[92,38] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[93,38] cannot find symbol
+  symbol:   method getQuantity()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[94,41] cannot find symbol
+  symbol:   method getPrice()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[95,43] cannot find symbol
+  symbol:   method getPrice()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[96,41] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[97,39] cannot find symbol
+  symbol:   method getExpiresAt()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[108,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[117,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[126,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[135,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[144,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[153,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[160,95] cannot find symbol
+  symbol:   method getStatus()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[165,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[168,58] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.event.TicketCancelledEvent
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[169,38] cannot find symbol
+  symbol:   method getId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[170,36] cannot find symbol
+  symbol:   method getUserId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[171,38] cannot find symbol
+  symbol:   method getTrajetId()
+  location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[184,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[190,13] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[190,59] cannot find symbol
+  symbol:   method getId()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[193,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[23,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[25,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[41,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[43,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[59,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[61,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[77,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[79,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[101,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[103,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[119,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[121,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[51,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[58,80] cannot find symbol
+  symbol:   method getStatus()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[62,34] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[64,39] cannot find symbol
+  symbol:   method getPaymentMethod()
+  location: variable request of type com.urbanmovems.tickets.dto.request.PaymentRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[67,31] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[68,33] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[72,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[72,68] cannot find symbol
+  symbol:   method getId()
+  location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[76,46] cannot find symbol
+  symbol:   method getId()
+  location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[79,29] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.dto.response.PaymentResult
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[80,40] cannot find symbol
+  symbol:   method getId()
+  location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[83,50] cannot find symbol
+  symbol:   method getPrice()
+  location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[97,52] cannot find symbol
+  symbol:   method builder()
+  location: class com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[108,13] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[116,9] cannot find symbol
+  symbol:   variable log
+  location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[116,70] cannot find symbol
+  symbol:   method getTicketId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[118,58] cannot find symbol
+  symbol:   method getTicketId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[120,54] cannot find symbol
+  symbol:   method getTicketId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[122,77] cannot find symbol
+  symbol:   method getPaymentId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[123,88] cannot find symbol
+  symbol:   method getPaymentId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[125,37] cannot find symbol
+  symbol:   method getStatus()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[127,42] cannot find symbol
+  symbol:   method getTransactionId()
+  location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.487 s
+[INFO] Finished at: 2025-11-28T20:21:20+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project ticket-service: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/TicketServiceImpl.java:[31,8] duplicate class: com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[24,24] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.dto.response.PriceDTO
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[25,30] cannot find symbol
+[ERROR]   symbol:   method getAmount()
+[ERROR]   location: variable price of type com.urbanmovems.tickets.model.Price
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/PriceDTO.java:[26,32] cannot find symbol
+[ERROR]   symbol:   method getCurrency()
+[ERROR]   location: variable price of type com.urbanmovems.tickets.model.Price
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/model/Price.java:[29,16] constructor Price in class com.urbanmovems.tickets.model.Price cannot be applied to given types;
+[ERROR]   required: no arguments
+[ERROR]   found:    int,java.lang.String
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/model/Price.java:[44,16] constructor Price in class com.urbanmovems.tickets.model.Price cannot be applied to given types;
+[ERROR]   required: no arguments
+[ERROR]   found:    int,java.lang.String
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[23,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[27,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[36,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/ExpirationScheduler.java:[40,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.ExpirationScheduler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[40,19] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[42,60] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[49,30] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.dto.response.TicketResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[50,27] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[51,31] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[52,33] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[53,33] cannot find symbol
+[ERROR]   symbol:   method getQuantity()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[54,31] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[55,30] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[55,58] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[57,33] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[57,61] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[58,31] cannot find symbol
+[ERROR]   symbol:   method getPaidAt()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[59,34] cannot find symbol
+[ERROR]   symbol:   method getExpiresAt()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/dto/response/TicketResponse.java:[60,34] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,70] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[52,91] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[55,71] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[56,79] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[60,83] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[62,57] cannot find symbol
+[ERROR]   symbol:   method getQuantity()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[65,20] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[68,52] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[70,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[75,31] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[76,32] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[77,34] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[78,34] cannot find symbol
+[ERROR]   symbol:   method getQuantity()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.TicketRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[86,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[86,72] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[89,58] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.event.TicketPurchasedEvent
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[90,38] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[91,36] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[92,38] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[93,38] cannot find symbol
+[ERROR]   symbol:   method getQuantity()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[94,41] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[95,43] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[96,41] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[97,39] cannot find symbol
+[ERROR]   symbol:   method getExpiresAt()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[108,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[117,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[126,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[135,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[144,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[153,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[160,95] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[165,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[168,58] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.event.TicketCancelledEvent
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[169,38] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[170,36] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[171,38] cannot find symbol
+[ERROR]   symbol:   method getTrajetId()
+[ERROR]   location: variable savedTicket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[184,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[190,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[190,59] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/impl/TicketServiceImpl.java:[193,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.TicketServiceImpl
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[23,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[25,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[41,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[43,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[59,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[61,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[77,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[79,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[101,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[103,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[119,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.exception.GlobalExceptionHandler
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/exception/GlobalExceptionHandler.java:[121,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.exception.ErrorResponse
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[51,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[58,80] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[62,34] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[64,39] cannot find symbol
+[ERROR]   symbol:   method getPaymentMethod()
+[ERROR]   location: variable request of type com.urbanmovems.tickets.dto.request.PaymentRequest
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[67,31] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[68,33] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[72,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[72,68] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[76,46] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[79,29] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.dto.response.PaymentResult
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[80,40] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedPayment of type com.urbanmovems.tickets.model.Payment
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[83,50] cannot find symbol
+[ERROR]   symbol:   method getPrice()
+[ERROR]   location: variable ticket of type com.urbanmovems.tickets.model.Ticket
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[97,52] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[108,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[116,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.urbanmovems.tickets.service.impl.MockPaymentService
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[116,70] cannot find symbol
+[ERROR]   symbol:   method getTicketId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[118,58] cannot find symbol
+[ERROR]   symbol:   method getTicketId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[120,54] cannot find symbol
+[ERROR]   symbol:   method getTicketId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[122,77] cannot find symbol
+[ERROR]   symbol:   method getPaymentId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[123,88] cannot find symbol
+[ERROR]   symbol:   method getPaymentId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[125,37] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] /C:/Users/achra/Desktop/Software-Oriented-Application/ticket-service/src/main/java/com/urbanmovems/tickets/service/MockPaymentService.java:[127,42] cannot find symbol
+[ERROR]   symbol:   method getTransactionId()
+[ERROR]   location: variable webhook of type com.urbanmovems.tickets.dto.request.PaymentWebhook
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

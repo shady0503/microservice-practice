@@ -1,4 +1,4 @@
-package com.urbanmovems.tickets.service.impl;
+package com.urbanmovems.tickets.service;
 
 import com.urbanmovems.tickets.dto.request.TicketRequest;
 import com.urbanmovems.tickets.dto.response.TicketResponse;

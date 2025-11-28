@@ -1,4 +1,4 @@
-package com.urbanmovems.tickets.service.impl;
+package com.urbanmovems.tickets.service;
 
 import com.urbanmovems.tickets.event.TicketCancelledEvent;
 import com.urbanmovems.tickets.event.TicketPaidEvent;

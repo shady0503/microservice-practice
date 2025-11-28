@@ -59,7 +59,7 @@ public class KafkaConsumerService {
 
                 Bus bus = new Bus();
                 bus.setBusNumber(busNumber);
-                // CRITICAL FIX: Use clean code "L7" instead of full name for matching
+                // CRITICAL: Use clean code "L7" instead of full name for matching
                 bus.setLineCode(cleanLineCode); 
                 bus.setCapacity(50);
                 bus.setStatus(Status.ACTIVE);

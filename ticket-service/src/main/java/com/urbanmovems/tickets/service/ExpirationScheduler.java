@@ -1,4 +1,4 @@
-package com.urbanmovems.tickets.service.impl;
+package com.urbanmovems.tickets.service;
 
 import com.urbanmovems.tickets.service.IdempotencyService;
 import com.urbanmovems.tickets.service.TicketService;

@@ -3,6 +3,7 @@ import { useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
+import MapPage from './pages/MapPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
@@ -10,10 +11,17 @@ import TicketHistory from './pages/TicketHistory';
 import ProfilePage from './pages/ProfilePage';
 
 const ProtectedRoute = ({ children }) => {
-    const { user, loading } = useContext(AuthContext);
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    if (!user) return <Navigate to="/login" />;
-    return children;
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+  return children;
+};
+
+const PublicOnlyRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (user) return <Navigate to="/dashboard" />;
+  return children;
 };
 
 function App() {
@@ -23,12 +31,25 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          
+          <Route path="/login" element={
+            <PublicOnlyRoute>
+              <LoginPage />
+            </PublicOnlyRoute>
+          } />
+          <Route path="/signup" element={
+            <PublicOnlyRoute>
+              <SignupPage />
+            </PublicOnlyRoute>
+          } />
+
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/map" element={
+            <ProtectedRoute>
+              <MapPage />
             </ProtectedRoute>
           } />
           <Route path="/history" element={

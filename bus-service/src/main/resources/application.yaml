@@ -24,7 +24,7 @@ spring:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: bus-service-group
-      auto-offset-reset: earliest
+      auto-offset-reset: earliest # <--- CRITICAL FOR SIMULATION
       enable-auto-commit: false
       max-poll-records: 100
     producer:
@@ -35,22 +35,14 @@ spring:
     listener:
       ack-mode: BATCH
 
-# OpenStreetMap Configuration - Now fetches REAL transit data!
+# OpenStreetMap Configuration
 openstreetmap:
   enabled: true
-  refresh-interval: 10000 # GPS update interval in milliseconds (10 seconds - reduced for performance)
-  
-  # Overpass API configuration (for fetching transit routes)
+  refresh-interval: 10000 
   overpass-api-url: https://overpass-api.de/api/interpreter
-  overpass-timeout: 60 # seconds
-  
-  # OSRM routing service (for route geometry generation)
+  overpass-timeout: 60 
   osrm-api-url: http://router.project-osrm.org/route/v1/driving
-  
-  # Region bounding box for Rabat-Salé-Témara (south, west, north, east)
   region-bbox: "33.85,-7.10,34.15,-6.70"
-  
-  # Transit data fetching
   fetch-on-startup: true
   cache-routes: true
 
