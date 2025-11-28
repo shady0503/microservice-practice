@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, Tooltip, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { TRAJET_API_URL, WS_URL } from '../config/api.config';
-import { Search, MapPin, Navigation, Bus as BusIcon, ArrowLeft, Clock, Crosshair, Map as MapIcon, RotateCcw, Loader2 } from 'lucide-react';
+import { Search, MapPin, Navigation, Bus as BusIcon, ArrowLeft, Clock, Crosshair, Map as MapIcon, RotateCcw, Loader2, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import TicketPurchaseModal from './TicketPurchaseModal';
 import 'leaflet/dist/leaflet.css';
@@ -36,20 +36,13 @@ const endIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
-// --- Hooks ---
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => setDebouncedValue(value), delay);
-        return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
-}
-
 // --- Components ---
+
 const LocationSelector = ({ mode, onSelect }) => {
     useMapEvents({
-        click(e) { if (mode) onSelect(e.latlng); },
+        click(e) {
+            if (mode) onSelect(e.latlng);
+        },
     });
     return null;
 };
@@ -59,35 +52,27 @@ const FitBounds = ({ geometry, start, end, walkingPaths }) => {
     useEffect(() => {
         const bounds = L.latLngBounds([]);
         let hasPoints = false;
-
         if (start) { bounds.extend([start.lat, start.lng]); hasPoints = true; }
         if (end) { bounds.extend([end.lat, end.lng]); hasPoints = true; }
-
+        
         if (geometry) {
             try {
                 const geoJson = JSON.parse(geometry);
                 const layer = L.geoJSON(geoJson);
-                const geoBounds = layer.getBounds();
-                if (geoBounds.isValid()) {
-                    bounds.extend(geoBounds);
-                    hasPoints = true;
+                if (layer.getBounds().isValid()) { 
+                    bounds.extend(layer.getBounds()); 
+                    hasPoints = true; 
                 }
-            } catch (e) { console.error("Invalid GeoJSON"); }
+            } catch (e) {}
         }
-
-        // Include walking paths in bounds
-        if (walkingPaths && walkingPaths.length > 0) {
-            walkingPaths.forEach(path => {
-                if (path && path.length > 0) {
-                    path.forEach(pt => bounds.extend(pt));
-                    hasPoints = true;
-                }
+        
+        if (walkingPaths) {
+            walkingPaths.flat().forEach(pt => {
+                if (pt) bounds.extend(pt);
             });
         }
-
-        if (hasPoints && bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] });
-        }
+        
+        if (hasPoints && bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
     }, [geometry, start, end, walkingPaths, map]);
     return null;
 };
@@ -95,9 +80,7 @@ const FitBounds = ({ geometry, start, end, walkingPaths }) => {
 const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Icon, rightElement }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
     const wrapperRef = useRef(null);
-    const debouncedValue = useDebounce(value, 500);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -108,32 +91,34 @@ const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Ico
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
+    
     useEffect(() => {
-        const fetchAddress = async () => {
-            if (!debouncedValue || debouncedValue.length < 3 || debouncedValue.includes(',')) {
-                setSuggestions([]);
-                return;
-            }
-            if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(debouncedValue)) return;
+        if (!value || value.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+        if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(value)) return;
 
-            setLoading(true);
+        const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(debouncedValue)}&countrycodes=ma&limit=5`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=ma&limit=5`);
                 const data = await res.json();
                 setSuggestions(data);
                 setIsOpen(true);
-            } catch (e) {
-                console.error("Geocoding error", e);
-            } finally {
-                setLoading(false);
-            }
-        };
+            } catch (e) {}
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [value]);
 
-        if (document.activeElement === wrapperRef.current?.querySelector('input')) {
-            fetchAddress();
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            if (suggestions.length > 0) {
+                const item = suggestions[0];
+                onSelect({ lat: parseFloat(item.lat), lng: parseFloat(item.lon), display_name: item.display_name });
+            }
+            setIsOpen(false);
         }
-    }, [debouncedValue]);
+    };
 
     return (
         <div className="relative z-20" ref={wrapperRef}>
@@ -143,29 +128,21 @@ const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Ico
                     className="w-full h-10 pl-9 pr-10 rounded-md border border-input bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
                     placeholder={placeholder}
                     value={value}
-                    onChange={(e) => {
-                        onChange(e.target.value);
-                        setIsOpen(true);
-                    }}
+                    onChange={e => { onChange(e.target.value); setIsOpen(true); }}
                     onFocus={() => value.length >= 3 && setIsOpen(true)}
+                    onKeyDown={handleKeyDown}
                 />
-                <div className="absolute right-2 top-2">
-                    {loading ? <Loader2 className="h-5 w-5 text-primary animate-spin" /> : rightElement}
-                </div>
+                <div className="absolute right-2 top-2">{rightElement}</div>
             </div>
-
+            
             {isOpen && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-100 max-h-60 overflow-y-auto py-1">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-100 max-h-60 overflow-y-auto py-1 z-[5000]">
                     {suggestions.map((item, idx) => (
-                        <button
-                            key={idx}
+                        <button 
+                            key={idx} 
                             className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 flex items-start gap-2"
                             onClick={() => {
-                                onSelect({
-                                    lat: parseFloat(item.lat),
-                                    lng: parseFloat(item.lon),
-                                    display_name: item.display_name
-                                });
+                                onSelect({ lat: parseFloat(item.lat), lng: parseFloat(item.lon), display_name: item.display_name });
                                 setIsOpen(false);
                             }}
                         >
@@ -181,79 +158,50 @@ const AddressAutocomplete = ({ value, onChange, onSelect, placeholder, icon: Ico
 
 const MapPage = () => {
     const { user } = useContext(AuthContext);
-
-    // UI State
     const [sidebarMode, setSidebarMode] = useState('SEARCH');
     const [selectionMode, setSelectionMode] = useState(null);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
     const [isLoadingRoutes, setIsLoadingRoutes] = useState(false);
-
-    // Data State
     const [searchInputs, setSearchInputs] = useState({ start: '', end: '' });
     const [searchPoints, setSearchPoints] = useState({ start: null, end: null });
     const [routes, setRoutes] = useState([]);
     const [selectedRoute, setSelectedRoute] = useState(null);
     const [routeGeometry, setRouteGeometry] = useState(null);
+    const [routeStops, setRouteStops] = useState([]); 
     const [busPositions, setBusPositions] = useState({});
-    
-    // Visualization
-    const [walkingPaths, setWalkingPaths] = useState([]); // Array of coordinate arrays
+    const [walkingPaths, setWalkingPaths] = useState([]);
+    const [selectedBusForTicket, setSelectedBusForTicket] = useState(null);
 
     const wsRef = useRef(null);
 
-    // Helpers
-    const geocode = async (address) => {
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-            const data = await res.json();
-            if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-            return null;
-        } catch (e) { return null; }
-    };
-
-    // Helper to calculate nearest stop
+    // Find nearest stop to a given point
     const findNearestStop = (point, stops) => {
         if (!point || !stops || stops.length === 0) return null;
         let nearest = null;
         let minDist = Infinity;
-
         stops.forEach(stop => {
-            // Simple Euclidean distance for local calculations
             const d = Math.sqrt(Math.pow(stop.latitude - point.lat, 2) + Math.pow(stop.longitude - point.lng, 2));
-            if (d < minDist) {
-                minDist = d;
-                nearest = stop;
-            }
+            if (d < minDist) { minDist = d; nearest = stop; }
         });
         return nearest;
     };
 
-    // Fetch Walking Route from OSRM
-    const fetchWalkingRoute = async (start, end) => {
+    // CHANGED: Return a simple direct cut-line (straight line)
+    const fetchWalkingRoute = (start, end) => {
         if (!start || !end) return [];
-        try {
-            // OSRM expects lon,lat;lon,lat
-            const url = `https://router.project-osrm.org/route/v1/foot/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
-            const response = await axios.get(url);
-            
-            if (response.data.routes && response.data.routes.length > 0) {
-                const coordinates = response.data.routes[0].geometry.coordinates;
-                // Convert [lon, lat] to [lat, lon] for Leaflet
-                return coordinates.map(coord => [coord[1], coord[0]]);
-            }
-            return [[start.lat, start.lng], [end.lat, end.lng]]; // Fallback straight line
-        } catch (e) {
-            console.error("Routing error:", e);
-            return [[start.lat, start.lng], [end.lat, end.lng]]; // Fallback straight line
-        }
+        return [[start.lat, start.lng], [end.lat, end.lng]];
     };
 
-    const handleAddressSearch = async (type) => {
-        const addr = searchInputs[type];
-        if (!addr) return;
-        const coords = await geocode(addr);
-        if (coords) setSearchPoints(prev => ({ ...prev, [type]: coords }));
-        else alert("Address not found");
+    const handleMapSelect = (latlng) => {
+        const str = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+        if (selectionMode === 'START') {
+            setSearchPoints(p => ({ ...p, start: latlng }));
+            setSearchInputs(p => ({ ...p, start: str }));
+        } else if (selectionMode === 'END') {
+            setSearchPoints(p => ({ ...p, end: latlng }));
+            setSearchInputs(p => ({ ...p, end: str }));
+        }
+        setSelectionMode(null);
     };
 
     const handleUseMyLocation = () => {
@@ -268,27 +216,15 @@ const MapPage = () => {
         );
     };
 
-    useEffect(() => {
-        if (searchPoints.start && (!searchInputs.start || searchInputs.start.includes(','))) 
-            setSearchInputs(p => ({...p, start: `${searchPoints.start.lat.toFixed(4)}, ${searchPoints.start.lng.toFixed(4)}`}));
-        if (searchPoints.end && (!searchInputs.end || searchInputs.end.includes(','))) 
-            setSearchInputs(p => ({...p, end: `${searchPoints.end.lat.toFixed(4)}, ${searchPoints.end.lng.toFixed(4)}`}));
-    }, [searchPoints]);
-
     const handleSearch = async () => {
         if (!searchPoints.start || !searchPoints.end) return;
         setIsLoadingRoutes(true);
         try {
             const res = await axios.get(`${TRAJET_API_URL}/search`, { 
-                params: { 
-                    fromLat: searchPoints.start.lat, 
-                    fromLon: searchPoints.start.lng, 
-                    toLat: searchPoints.end.lat, 
-                    toLon: searchPoints.end.lng 
-                } 
+                params: { fromLat: searchPoints.start.lat, fromLon: searchPoints.start.lng, toLat: searchPoints.end.lat, toLon: searchPoints.end.lng } 
             });
             setRoutes(res.data);
-        } catch (error) { console.error("Search failed:", error); }
+        } catch (error) { console.error("Search failed:", error); } 
         finally { setIsLoadingRoutes(false); }
     };
 
@@ -297,6 +233,7 @@ const MapPage = () => {
         setSidebarMode('DETAILS');
         setBusPositions({}); 
         setWalkingPaths([]);
+        setRouteStops([]);
         
         try {
             const res = await axios.get(`${TRAJET_API_URL}/lines/${route.lineRef}/complete`);
@@ -304,58 +241,77 @@ const MapPage = () => {
             
             if (matchedRoute) {
                 setRouteGeometry(matchedRoute.geometry);
-                
-                // Calculate Real Walking Routes to Nearest Stops
+                setRouteStops(matchedRoute.stops || []);
+
+                // Calculate Direct "Cut-Line" Paths to Nearest Stops
                 if (matchedRoute.stops && matchedRoute.stops.length > 0) {
                     const nearestStart = findNearestStop(searchPoints.start, matchedRoute.stops);
                     const nearestEnd = findNearestStop(searchPoints.end, matchedRoute.stops);
                     
                     const paths = [];
-                    
+                    // Start -> Nearest Stop
                     if (nearestStart) {
-                        const path1 = await fetchWalkingRoute(
+                        // Direct line function is essentially synchronous now, but keeping structure
+                        const path1 = fetchWalkingRoute(
                             searchPoints.start, 
                             { lat: nearestStart.latitude, lng: nearestStart.longitude }
                         );
                         paths.push(path1);
                     }
-                    
+                    // Nearest End Stop -> Destination
                     if (nearestEnd) {
-                        const path2 = await fetchWalkingRoute(
-                            { lat: nearestEnd.latitude, lng: nearestEnd.longitude },
+                        const path2 = fetchWalkingRoute(
+                            { lat: nearestEnd.latitude, lng: nearestEnd.longitude }, 
                             searchPoints.end
                         );
                         paths.push(path2);
                     }
-                    
                     setWalkingPaths(paths);
                 }
             }
         } catch (e) { console.error("Failed to load geometry/routes", e); }
     };
 
+    const handleBuyTicket = (bus = null) => {
+        setSelectedBusForTicket(bus);
+        setIsTicketModalOpen(true);
+    };
+
     useEffect(() => {
         wsRef.current = new WebSocket(WS_URL);
-        wsRef.current.onopen = () => console.log("✅ WebSocket Connected");
         wsRef.current.onmessage = (event) => {
+            if (!selectedRoute) return; 
             try {
                 const message = JSON.parse(event.data);
                 if (message.type === 'GPS_UPDATE') {
                     const payload = message.payload;
-                    if (!selectedRoute) {
-                        setBusPositions(prev => ({ ...prev, [payload.busId]: payload }));
-                        return;
-                    }
-                    const wsRef = (payload.lineCode || "").split(':')[0].trim();
+                    const wsRef = (payload.lineNumber || "").split(':')[0].trim();
                     const routeRef = selectedRoute.lineRef;
-                    if (wsRef === routeRef || wsRef === `L${routeRef}` || payload.lineCode?.includes(routeRef)) {
+                    if (wsRef === routeRef || wsRef === `L${routeRef}` || payload.lineNumber?.includes(routeRef)) {
                         setBusPositions(prev => ({ ...prev, [payload.busId]: payload }));
                     }
                 }
-            } catch (e) { console.error("WS Parse Error", e); }
+            } catch (e) { }
         };
         return () => { if (wsRef.current) wsRef.current.close(); };
     }, [selectedRoute]);
+
+    const getOccupancyColor = (current, max) => {
+        const pct = (current / max) * 100;
+        if (pct < 50) return "text-green-600";
+        if (pct < 80) return "text-yellow-600";
+        return "text-red-600";
+    };
+
+    const getRoutePositions = (geometry) => {
+        if (!geometry) return [];
+        try {
+            const geo = JSON.parse(geometry);
+            if (geo.type === 'MultiLineString') return geo.coordinates.map(line => line.map(p => [p[1], p[0]]));
+            else if (geo.type === 'LineString') return geo.coordinates.map(p => [p[1], p[0]]);
+            return [];
+        } catch (e) { return []; }
+    };
 
     return (
         <div className="relative w-full h-screen overflow-hidden bg-slate-100">
@@ -365,7 +321,7 @@ const MapPage = () => {
                     <div className="p-4 bg-primary text-primary-foreground shrink-0">
                         {sidebarMode === 'DETAILS' ? (
                             <div>
-                                <button onClick={() => { setSidebarMode('SEARCH'); setBusPositions({}); setRouteGeometry(null); setSelectedRoute(null); setWalkingPaths([]); }} className="flex items-center gap-2 text-sm hover:underline mb-2 opacity-90"><ArrowLeft className="w-4 h-4" /> Back</button>
+                                <button onClick={() => { setSidebarMode('SEARCH'); setBusPositions({}); setRouteGeometry(null); setSelectedRoute(null); setRouteStops([]); }} className="flex items-center gap-2 text-sm hover:underline mb-2 opacity-90"><ArrowLeft className="w-4 h-4" /> Back</button>
                                 <div className="flex items-baseline justify-between"><h2 className="text-2xl font-bold">Line {selectedRoute.lineRef}</h2><span className="text-sm bg-white/20 px-2 py-1 rounded">{selectedRoute.direction}</span></div>
                                 <p className="text-white/80 text-sm truncate mt-1">{selectedRoute.lineName}</p>
                             </div>
@@ -378,6 +334,7 @@ const MapPage = () => {
                                 <div className="space-y-4 p-1 relative">
                                     <div className="absolute left-4 top-10 bottom-16 w-0.5 bg-slate-200 z-0"></div>
                                     
+                                    {/* Start Input */}
                                     <div className="space-y-2 relative z-10">
                                         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">From</label>
                                         <div className="flex gap-2">
@@ -402,6 +359,7 @@ const MapPage = () => {
                                         </div>
                                     </div>
 
+                                    {/* Swap Button */}
                                     <div className="flex justify-center -my-2 relative z-20">
                                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-slate-100 border hover:bg-slate-200" onClick={() => {
                                             setSearchPoints(p => ({ start: p.end, end: p.start }));
@@ -411,6 +369,7 @@ const MapPage = () => {
                                         </Button>
                                     </div>
 
+                                    {/* End Input */}
                                     <div className="space-y-2 relative z-10">
                                         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">To</label>
                                         <div className="flex gap-2">
@@ -458,17 +417,33 @@ const MapPage = () => {
                         ) : (
                             <>
                                 <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
-                                    <div><div className="text-xs text-slate-500 uppercase font-bold">Total Fare</div><div className="text-2xl font-bold text-primary">{selectedRoute.price} MAD</div></div>
-                                    <Button onClick={() => setIsTicketModalOpen(true)} className="shadow-lg hover:shadow-xl px-6">Buy Ticket</Button>
+                                    <div><div className="text-xs text-slate-500 uppercase font-bold">Base Fare</div><div className="text-2xl font-bold text-primary">{selectedRoute.price} MAD</div></div>
+                                    <Button onClick={() => handleBuyTicket(null)} variant="outline">Any Bus</Button>
                                 </div>
+                                
                                 <div>
                                     <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2 text-sm uppercase tracking-wider"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span> Live Buses ({Object.keys(busPositions).length})</h3>
                                     <div className="space-y-3">
                                         {Object.values(busPositions).length === 0 ? <div className="text-sm text-slate-400 italic text-center py-8 bg-slate-50 rounded-xl border border-dashed"><BusIcon className="w-8 h-8 mx-auto mb-2 opacity-20" />Waiting for live bus data...</div> : Object.values(busPositions).map(bus => (
                                             <div key={bus.busId} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100"><BusIcon className="w-5 h-5" /></div><div><div className="font-bold text-sm text-slate-800">{bus.busMatricule}</div><div className="text-xs text-slate-500 flex items-center gap-1"><span>{bus.speed?.toFixed(0)} km/h</span></div></div></div>
-                                                    <div className="text-right"><div className="flex items-center gap-1 text-green-700 text-xs font-bold bg-green-100 px-2 py-1 rounded-full">Active</div></div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100"><BusIcon className="w-5 h-5" /></div>
+                                                        <div>
+                                                            <div className="font-bold text-sm text-slate-800">{bus.busMatricule}</div>
+                                                            <div className="text-xs text-slate-500">Next: {bus.nextStop || '...'}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-sm text-slate-700">{bus.estimatedArrival || 'N/A'}</div>
+                                                        <div className="text-[10px] text-slate-400 uppercase">ETA</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs">
+                                                    <span className={`flex items-center gap-1 font-bold ${getOccupancyColor(bus.occupancy || 0, bus.capacity || 50)}`}>
+                                                        <Users className="w-3 h-3" /> {bus.occupancy || 0}/{bus.capacity || 50} seats
+                                                    </span>
+                                                    <Button size="sm" className="h-7 text-xs" onClick={() => handleBuyTicket(bus)}>Book This Bus</Button>
                                                 </div>
                                             </div>
                                         ))}
@@ -483,32 +458,55 @@ const MapPage = () => {
             <MapContainer center={[34.0227601, -6.8361348]} zoom={13} className="w-full h-full z-0" zoomControl={false}>
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
                 
-                <LocationSelector mode={selectionMode} onSelect={(latlng) => { 
-                    const str = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-                    if (selectionMode === 'START') { setSearchPoints(p => ({ ...p, start: latlng })); setSearchInputs(p => ({...p, start: str})); }
-                    if (selectionMode === 'END') { setSearchPoints(p => ({ ...p, end: latlng })); setSearchInputs(p => ({...p, end: str})); }
-                    setSelectionMode(null); 
-                }} />
+                <LocationSelector mode={selectionMode} onSelect={handleMapSelect} />
                 
                 <FitBounds geometry={routeGeometry} start={searchPoints.start} end={searchPoints.end} walkingPaths={walkingPaths} />
                 
                 {searchPoints.start && <Marker position={searchPoints.start} icon={startIcon}><Popup>Start: {searchInputs.start}</Popup></Marker>}
                 {searchPoints.end && <Marker position={searchPoints.end} icon={endIcon}><Popup>Destination: {searchInputs.end}</Popup></Marker>}
                 
-                {/* Bus Route */}
-                {routeGeometry && <Polyline positions={(() => { try { const geo = JSON.parse(routeGeometry); return geo.coordinates ? (geo.type === 'MultiLineString' ? geo.coordinates.map(seg => seg.map(p => [p[1], p[0]])) : geo.coordinates.map(p => [p[1], p[0]])) : []; } catch (e) { return [] } })()} color="#2563eb" weight={6} opacity={0.8} />}
-                
-                {/* Visual Links (Real Walking Paths) */}
+                {/* Visual Links (Direct Paths) */}
                 {walkingPaths.map((path, idx) => (
                     <Polyline key={`walk-${idx}`} positions={path} color="#64748b" weight={4} dashArray="10, 10" opacity={0.6} />
                 ))}
 
+                {/* Bus Route */}
+                {routeGeometry && <Polyline positions={getRoutePositions(routeGeometry)} color="#2563eb" weight={6} opacity={0.8} />}
+                
+                {/* Bus Stops */}
+                {routeStops.map((stop, idx) => (
+                    <CircleMarker 
+                        key={`stop-${stop.id}-${idx}`} 
+                        center={[stop.latitude, stop.longitude]} 
+                        radius={5} 
+                        pathOptions={{ color: 'white', fillColor: '#2563eb', fillOpacity: 1, weight: 2 }}
+                    >
+                        <Tooltip direction="top" offset={[0, -5]} opacity={1}>{stop.name}</Tooltip>
+                    </CircleMarker>
+                ))}
+
                 {/* Live Buses */}
-                {Object.values(busPositions).map(bus => (<Marker key={bus.busId} position={[bus.latitude, bus.longitude]} icon={busIcon}><Popup><div className="font-sans text-center"><b className="text-primary text-lg">{bus.busMatricule}</b><br /><span className="text-sm font-semibold">{bus.speed?.toFixed(1)} km/h</span></div></Popup></Marker>))}
+                {Object.values(busPositions).map(bus => (
+                    <Marker key={bus.busId} position={[bus.latitude, bus.longitude]} icon={busIcon}>
+                        <Popup>
+                            <div className="font-sans text-center min-w-[150px]">
+                                <b className="text-primary text-lg block mb-1">{bus.busMatricule}</b>
+                                <div className="text-xs text-slate-500 mb-2 font-semibold">Heading to: {bus.nextStop}</div>
+                                <div className="grid grid-cols-2 gap-2 text-xs text-left bg-slate-50 p-2 rounded mb-2">
+                                    <span className="text-slate-500">Speed:</span> <span className="font-bold">{bus.speed?.toFixed(0)} km/h</span>
+                                    <span className="text-slate-500">Seats:</span> <span className={`font-bold ${getOccupancyColor(bus.occupancy, bus.capacity)}`}>{bus.occupancy}/{bus.capacity}</span>
+                                    <span className="text-slate-500">ETA:</span> <span className="font-bold text-blue-600">{bus.estimatedArrival}</span>
+                                </div>
+                                <Button size="sm" className="w-full" onClick={() => handleBuyTicket(bus)}>Buy Ticket</Button>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
             </MapContainer>
 
             {selectionMode && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-2 rounded-full z-[1100] font-medium flex items-center gap-2"><MapIcon className="w-4 h-4" /> Click map to select {selectionMode === 'START' ? 'Start' : 'Destination'}</div>}
-            <TicketPurchaseModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} route={selectedRoute} user={user} />
+            
+            <TicketPurchaseModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} route={selectedRoute} user={user} bus={selectedBusForTicket} />
         </div>
     );
 };
