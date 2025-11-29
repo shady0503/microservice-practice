@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Ticket, Map, LayoutDashboard } from 'lucide-react';
+import { QrCode } from 'lucide-react'; // Add icon import
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -38,6 +39,7 @@ const Navbar = () => {
                                 <Link to="/dashboard"><Button variant="ghost" size="sm" className="gap-2"><LayoutDashboard className="w-4 h-4" /> Dashboard</Button></Link>
                                 <Link to="/map"><Button variant="ghost" size="sm" className="gap-2"><Map className="w-4 h-4" /> Map</Button></Link>
                                 <Link to="/history"><Button variant="ghost" size="sm" className="gap-2"><Ticket className="w-4 h-4" /> Tickets</Button></Link>
+                                {/* <Link to="/scan"><Button variant="ghost" size="sm" className="gap-2"><QrCode className="w-4 h-4" /> Scanner</Button></Link> */}
                                 <Link to="/profile">
                                     <div className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200 cursor-pointer">
                                         <span className="text-sm font-medium text-slate-700 hidden sm:block">{getDisplayName()}</span>

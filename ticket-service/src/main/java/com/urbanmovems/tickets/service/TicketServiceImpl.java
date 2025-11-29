@@ -183,4 +183,27 @@ public class TicketServiceImpl implements TicketService {
 
         log.info("Marked {} expired tickets", expiredTickets.size());
     }
+
+    @Override
+    @Transactional
+    public TicketResponse scanTicket(UUID ticketId) {
+        log.info("Scanning ticket: {}", ticketId);
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException("Ticket introuvable"));
+
+        try {
+            ticket.markAsScanned();
+        } catch (IllegalStateException e) {
+            // Convert to a custom exception for better HTTP response handling if needed
+            throw new TicketNotPayableException(e.getMessage());
+        }
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+        log.info("Ticket {} scanned successfully at {}", ticketId, savedTicket.getScannedAt());
+        
+        // Optional: Publish event TicketScannedEvent here
+
+        return TicketResponse.fromTicket(savedTicket);
+    }
 }

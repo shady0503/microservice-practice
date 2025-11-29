@@ -9,6 +9,7 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import TicketHistory from './pages/TicketHistory';
 import ProfilePage from './pages/ProfilePage';
+import ScanPage from './pages/ScanPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -60,6 +61,11 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/scan" element={
+            <ProtectedRoute>
+              <ScanPage />
             </ProtectedRoute>
           } />
         </Routes>

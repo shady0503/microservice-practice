@@ -48,4 +48,10 @@ public interface TicketService {
      * Marque les tickets expirés
      */
     void markExpiredTickets();
+
+
+    /**
+     * Scanne un ticket
+     */
+    TicketResponse scanTicket(UUID ticketId);
 }

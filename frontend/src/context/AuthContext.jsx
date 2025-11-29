@@ -28,6 +28,20 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    const updateUser = (userData) => {
+        // Merge existing user data with new data
+        const updatedUser = { ...user, ...userData };
+        
+        // Handle the structure mismatch (sometimes user is nested in user.user)
+        if (updatedUser.user) {
+            updatedUser.user = { ...updatedUser.user, ...userData };
+        }
+
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        setUser(updatedUser);
+    };
+
+
     const handleAuthSuccess = (response) => {
         if (response) {
             // Extract the actual user object properties
@@ -67,7 +81,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, loading, updateUser }}>
             {!loading && children}
         </AuthContext.Provider>
     );

@@ -56,6 +56,13 @@ public class TicketController {
         return ResponseEntity.ok(tickets);
     }
 
+    @PostMapping("/{id}/scan")
+    public ResponseEntity<TicketResponse> scanTicket(@PathVariable UUID id) {
+        log.info("POST /api/v1/tickets/{}/scan", id);
+        TicketResponse ticket = ticketService.scanTicket(id);
+        return ResponseEntity.ok(ticket);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TicketResponse> getTicketById(@PathVariable UUID id) {
         log.debug("GET /api/v1/tickets/{}", id);

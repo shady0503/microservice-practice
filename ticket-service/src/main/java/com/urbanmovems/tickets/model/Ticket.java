@@ -42,6 +42,9 @@ public class Ticket {
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+    
+    @Column(name = "scanned_at")
+    private LocalDateTime scannedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -51,48 +54,41 @@ public class Ticket {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    /**
-     * Marque le ticket comme payé
-     */
     public void markAsPaid() {
         this.status = TicketStatus.PAID;
         this.paidAt = LocalDateTime.now();
-        this.expiresAt = null; // Plus d'expiration une fois payé
+        this.expiresAt = null;
     }
 
-    /**
-     * Marque le ticket comme annulé
-     */
     public void markAsCancelled() {
         this.status = TicketStatus.CANCELLED;
         this.expiresAt = null;
     }
 
-    /**
-     * Marque le ticket comme expiré
-     */
     public void markAsExpired() {
         this.status = TicketStatus.EXPIRED;
     }
+    
+    public void markAsScanned() {
+        if (this.status != TicketStatus.PAID) {
+            throw new IllegalStateException("Ticket invalide pour le scan (Statut: " + this.status + ")");
+        }
+        this.status = TicketStatus.USED;
+        this.scannedAt = LocalDateTime.now();
+    }
 
-    /**
-     * Vérifie si le ticket peut être payé
-     */
     public boolean canBePaid() {
         return status == TicketStatus.RESERVED &&
                 (expiresAt == null || expiresAt.isAfter(LocalDateTime.now()));
     }
 
-    /**
-     * Vérifie si le ticket peut être annulé
-     */
     public boolean canBeCancelled() {
-        return status == TicketStatus.RESERVED;
+        // Impossible to cancel if already USED (Scanned) or EXPIRED
+        boolean isPayableOrPaid = (status == TicketStatus.RESERVED || status == TicketStatus.PAID);
+        boolean isNotExpired = (expiresAt == null || expiresAt.isAfter(LocalDateTime.now()));
+        return isPayableOrPaid && isNotExpired;
     }
-
-    /**
-     * Vérifie si le ticket est expiré
-     */
+    
     public boolean isExpired() {
         return status == TicketStatus.RESERVED &&
                 expiresAt != null &&

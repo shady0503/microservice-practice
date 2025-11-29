@@ -15,8 +15,8 @@ CREATE TABLE tickets (
                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-                         CONSTRAINT chk_quantity CHECK (quantity > 0 AND quantity <= 10),
-                         CONSTRAINT chk_status CHECK (status IN ('RESERVED', 'PAID', 'CANCELLED', 'EXPIRED')),
+                         CONSTRAINT chk_quantity CHECK (quantity > 0 AND quantity <= 10),   
+                         CONSTRAINT chk_status CHECK (status IN ('RESERVED', 'PAID', 'USED', 'CANCELLED', 'EXPIRED')),
                          CONSTRAINT chk_price CHECK (price_amount >= 0)
 );
 

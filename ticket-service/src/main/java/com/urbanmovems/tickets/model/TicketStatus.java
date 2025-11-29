@@ -1,8 +1,9 @@
 package com.urbanmovems.tickets.model;
 
 public enum TicketStatus {
-    RESERVED,   // Ticket réservé, en attente de paiement
-    PAID,       // Ticket payé et confirmé
-    CANCELLED,  // Ticket annulé par l'utilisateur
-    EXPIRED     // Ticket réservé mais non payé dans le délai
+    RESERVED,   // Réservé, en attente de paiement
+    PAID,       // Payé, valide pour voyager
+    USED,       // Scanné/Validé à bord (Non remboursable)
+    CANCELLED,  // Annulé
+    EXPIRED     // Expiré
 }

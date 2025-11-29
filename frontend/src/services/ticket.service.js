@@ -12,3 +12,13 @@ export const getUserTickets = async (userId) => {
         throw error;
     }
 };
+
+export const scanTicket = async (ticketId) => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/tickets/${ticketId}/scan`);
+        return response.data;
+    } catch (error) {
+        console.error("Error scanning ticket:", error);
+        throw error;
+    }
+};
